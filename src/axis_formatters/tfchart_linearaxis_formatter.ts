@@ -1,5 +1,4 @@
-import { TFChartAxisFormatter, AxisValue } from '../tfchart_axis_formatter'
-import { Axis } from '../tfchart_axis_formatter'
+import { TFChartAxisFormatter, AxisValue, Axis } from './tfchart_axis_formatter'
 
 export class LinearAxisFormatter extends TFChartAxisFormatter {
     constructor(private decimal_placess: number) {

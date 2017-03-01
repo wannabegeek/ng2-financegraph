@@ -1,7 +1,9 @@
-import { TFChartRenderer } from '../tfchart_renderer'
+import { TFChartRenderer } from './tfchart_renderer'
 import { TFChart } from '../tfchart'
+import { TFChartRange } from '../tfchart_utils'
+import { TFChartLineDataType } from '../series/tfchart_series_line'
 
-export class TFChartLineChartRenderer<T> extends TFChartRenderer {
+export class TFChartLineChartRenderer extends TFChartRenderer {
 
     private theme = {
         lineColor: "#FF0000"
@@ -19,16 +21,16 @@ export class TFChartLineChartRenderer<T> extends TFChartRenderer {
     //     this.theme = $.extend({}, default_theme, options.theme.candlestick || {});
     // }
 
-    public render<T>(data: T[], chart: TFChart) {
+    public render(data: TFChartLineDataType[], visibleRange: TFChartRange, chart: TFChart) {
         var ctx = chart.getDrawingContext();
 
         ctx.strokeStyle = this.theme.lineColor;
         ctx.beginPath();
 
-        ctx.moveTo(chart.pixelValueAtXValue(data[0].timestamp), chart.pixelValueAtYValue(data[0].close));
+        ctx.moveTo(chart.pixelValueAtXValue(data[0].timestamp), chart.pixelValueAtYValue(data[0].value));
 
         for (let point of data) {
-            ctx.lineTo(chart.pixelValueAtXValue(point.timestamp), chart.pixelValueAtYValue(point.close));
+            ctx.lineTo(chart.pixelValueAtXValue(point.timestamp), chart.pixelValueAtYValue(point.value));
         }
 
         ctx.stroke();

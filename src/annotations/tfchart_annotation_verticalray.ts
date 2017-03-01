@@ -1,10 +1,10 @@
-import { TFChartAnnotation } from '../tfchart_annotation'
+import { TFChartAnnotation } from './tfchart_annotation'
 import { TFChartRect, TFChartPoint, TFChartRectGetMaxY, TFChartRectGetMinY, TFChartRectGetMaxX } from '../tfchart_utils'
 import { TFChart } from '../tfchart'
 
 export class TFChartVerticalRay extends TFChartAnnotation {
 
-    constructor(private lineColor, private start: TFChartPoint, private is_down: boolean) {
+    constructor(private lineColor: string, private start: TFChartPoint, private is_down: boolean) {
         super();
     }
 

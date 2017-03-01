@@ -1,4 +1,4 @@
-import { TFChartAnnotation } from '../tfchart_annotation'
+import { TFChartAnnotation } from './tfchart_annotation'
 import { TFChartRect, TFChartPoint, TFChartRectMake } from '../tfchart_utils'
 import { TFChart } from '../tfchart'
 
@@ -6,7 +6,7 @@ export class TFChartLine extends TFChartAnnotation {
 
     private bounding_box: TFChartRect;
     
-    constructor(private lineColor, private start: TFChartPoint, private end: TFChartPoint) {
+    constructor(private lineColor: string, private start: TFChartPoint, private end: TFChartPoint) {
         super();
         this.bounding_box = TFChartRectMake(Math.min(start.x, end.x), Math.min(start.y, end.y), Math.max(start.x, end.x), Math.max(start.y, end.y));
     }

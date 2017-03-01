@@ -1,11 +1,11 @@
 import { Component, ViewChild, ElementRef, HostListener, EventEmitter, Input, Output, HostBinding } from '@angular/core';
 import { TFChartSize, TFChartRangeMax, TFChartRange, TFChartRect, TFChartRectMake, TFChartPoint, TFChartPointMake } from './tfchart_utils'
-import { TFChartRenderer } from './tfchart_renderer'
-import { TFChartAnnotation } from './tfchart_annotation'
-import { TFChartAxisFormatter } from './tfchart_axis_formatter'
+import { TFChartRenderer } from './renderers/tfchart_renderer'
+import { TFChartAnnotation } from './annotations/tfchart_annotation'
+import { TFChartAxisFormatter } from './axis_formatters/tfchart_axis_formatter'
 import { DateTimeAxisFormatter } from './axis_formatters/tfchart_datetimeaxis_formatter'
 import { LinearAxisFormatter } from './axis_formatters/tfchart_linearaxis_formatter'
-import { TFChartDataRequestType, TFChartDataController } from './tfchart_datacontroller'
+import { TFChartSeries } from './series/tfchart_series'
 import { TFChart } from './tfchart'
 
 export class Axis {
@@ -16,25 +16,32 @@ export class Axis {
 }
 
 @Component({
-  selector: 'tfchart',
-  template: `
-    <div #chartContainer style="height: 100%; width:100%; position: relative">
-    </div>
-  `,
-  styleUrls: ['tfchart.component.css'],
-  host: {'style': 'height: 100%'}
+    selector: 'tfchart',
+    template: `
+        <div #chartContainer style="height: 100%; width:100%; position: relative">
+        </div>
+      `,
+    styles: [`
+        crosshairCanvas {
+            cursor: crosshair;
+        }
+    `],
+    host: {'style': 'height: 100%'}
 })
 export class TFChartComponent {
-    @Input('renderer') renderer: TFChartRenderer;
     @Input('period') period: number;
-    @Input('data_controller') data_controller: TFChartDataController;
+    @Input('series') series: TFChartSeries;
+    @Input('initialRange') initialRange: TFChartRange;
+    @Input('enableDebug') enableDebug: boolean;
 
     @ViewChild("chartContainer") chartContainerRef: ElementRef;
 
     private chart: TFChart;
 
     ngAfterViewInit() {
-        this.chart = new TFChart(this.chartContainerRef.nativeElement);
+        console.log("Initialising chart [period: " + this.period + "] range: " + this.initialRange);
+        this.chart = new TFChart(this.chartContainerRef.nativeElement, this.series, this.period, this.initialRange);
+        this.chart.debug(this.enableDebug);
     }
 
 

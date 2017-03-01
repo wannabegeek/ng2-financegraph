@@ -1,6 +1,6 @@
 {
   "name": "ng2-tfchart",
-  "version": "1.0.8",
+  "version": "1.0.0",
   "description": "A simple angular 2 charting library",
   "main": "./dist/index.js",
   "typings": "./dist/index.d.ts",
@@ -33,6 +33,9 @@
   },
   "homepage": "https://github.com/wannabegeek/ng2-tfchart/#readme",
   "devDependencies": {
+    "@types/element-resize-event": "^1.0.30",
+    "@types/node": "^7.0.5",
+    "karma-typescript": "^2.1.7",
     "typescript": "^2.1.6"
   },
   "dependencies": {
@@ -41,7 +44,9 @@
     "@angular/core": "^2.4.7",
     "@angular/platform-browser": "^2.4.7",
     "@angular/platform-browser-dynamic": "^2.4.7",
+    "@types/element-resize-event": "^1.0.30",
     "css-element-queries": "^0.4.0",
+    "element-resize-event": "^2.0.7",
     "moment": "^2.17.1",
     "rxjs": "^5.2.0",
     "tslint": "^3.15.1",

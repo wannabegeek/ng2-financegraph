@@ -1,4 +1,11 @@
+export function TFChartDateTimeRange(range: TFChartRange) {
+    let start = new Date(range.position);
+    let end = new Date(TFChartRangeMax(range));
+    return start.toString() + " -> " + end.toString();
+}
+
 export class TFChartRange{    
+
     constructor(public position: number, public span: number) {
     }
 
@@ -12,6 +19,10 @@ export class TFChartRange{
 
     public ratioForSize(size: number): number {
         return size / this.span;
+    }
+
+    public toString(): string {
+        return "{position: " + this.position + ", span: " + this.span + "}";
     }
 }
 
@@ -72,6 +83,10 @@ export class TFChartSize {
     public toString(): string {
         return "{width: " + this.width + ", height: " + this.height + "}";
     }
+}
+
+export function TFChartSizeMake(width: number, height: number): TFChartSize {
+    return new TFChartSize(width, height);
 }
 
 //////////////////////////////////////////////////////////////////

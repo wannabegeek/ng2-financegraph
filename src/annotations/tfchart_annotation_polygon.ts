@@ -1,4 +1,4 @@
-import { TFChartAnnotation } from '../tfchart_annotation'
+import { TFChartAnnotation } from './tfchart_annotation'
 import { TFChartRect, TFChartPoint, TFChartRectGetMaxY, TFChartRectGetMinY, TFChartRectGetMaxX, TFChartRectMake } from '../tfchart_utils'
 import { TFChart } from '../tfchart'
 
@@ -7,7 +7,7 @@ export class TFChartPolygon extends TFChartAnnotation {
     private bounding_box: TFChartRect;
     private points: TFChartPoint[] = []
 
-    constructor(private borderColor, private fillColor) {
+    constructor(private borderColor: string, private fillColor: string) {
         super();
     }
 

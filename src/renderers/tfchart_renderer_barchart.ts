@@ -1,5 +1,7 @@
-import { TFChartRenderer } from '../tfchart_renderer'
+import { TFChartRenderer } from './tfchart_renderer'
 import { TFChart } from '../tfchart'
+import { TFChartRange } from '../tfchart_utils'
+import { TFChartBarchartDataType } from '../series/tfchart_series_barchart'
 
 export class TFChartBarChartRenderer extends TFChartRenderer {
 
@@ -20,7 +22,7 @@ export class TFChartBarChartRenderer extends TFChartRenderer {
     //     this.theme = $.extend({}, default_theme, options.theme.candlestick || {});
     // }
 
-    public render<T>(data: T[], chart: TFChart) {
+    public render(data: TFChartBarchartDataType[], visibleRange: TFChartRange, chart: TFChart) {
         var ctx = chart.getDrawingContext();
         var x_start = chart.pixelValueAtXValue(data[0].timestamp);
         var x_end = chart.pixelValueAtXValue(data[data.length - 1].timestamp);
@@ -32,9 +34,9 @@ export class TFChartBarChartRenderer extends TFChartRenderer {
         ctx.strokeStyle = this.theme.barStrokeColor;
 
         for (let point of data) {
-            if (chart.doesXValueIntersectVisible(point.timestamp)) {
+            if (visibleRange.intersects(point.timestamp)) {
                 var plot = chart.plotArea();
-                var body_top = Math.round(chart.pixelValueAtYValue(point.close)) + 0.5;
+                var body_top = Math.round(chart.pixelValueAtYValue(point.value)) + 0.5;
                 var offset = chart.pixelValueAtXValue(point.timestamp);
 
                 if (offset > -half_bar_width) {

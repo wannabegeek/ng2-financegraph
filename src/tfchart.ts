@@ -1,18 +1,20 @@
-import { TFChartSize, TFChartRangeMax, TFChartRange, TFChartRect, TFChartRectMake, TFChartPoint, TFChartPointMake } from './tfchart_utils'
-import { TFChartRenderer } from './tfchart_renderer'
-import { TFChartAnnotation } from './tfchart_annotation'
-import { TFChartDataRequestType, TFChartDataController } from './tfchart_datacontroller'
+import { TFChartDateTimeRange, TFChartSize, TFChartRangeMax, TFChartRangeMake, TFChartRange, TFChartRect, TFChartRectMake, TFChartRectGetMaxY, TFChartPoint, TFChartPointMake } from './tfchart_utils'
+import { TFChartRenderer } from './renderers/tfchart_renderer'
+import { TFChartAnnotation } from './annotations/tfchart_annotation'
+import { TFChartSeries } from './series/tfchart_series'
+import { TFChartDataRequestType, TFChartDataController, DataOperation } from './tfchart_datacontroller'
 import { TFChartContext } from './tfchart_context'
 
 export class TFChart extends TFChartContext {
-    private renderer: TFChartRenderer;
-    private period: number;
-    private dataController: TFChartDataController;
-
     private annotations: TFChartAnnotation[] = [];
     private bounds: TFChartRect = null;
-    private visible_data_points: number = 0;
-    private visible_offset: number = 0;
+    private visibleDataPoints: number = 0;
+    private visibleOffset: number = 0;
+
+    private isMouseDown: boolean = false;
+    private dragStart: number = 0;
+
+    private enableDebug: boolean = false;
 
     private options = {
         theme: {
@@ -24,75 +26,121 @@ export class TFChart extends TFChartContext {
             crosshairColor: "#999999"
         },
         min_data_points: 15,
-        max_data_points: 1000,
+        max_data_points: 500,
         space_right: 0.0,
         initial_data_points: 100,
         view_range: null,
         controller: null
     };
 
-    public constructor(chartContainer: any) {
+    public constructor(chartContainer: any, private series: TFChartSeries, private period: number, initialRange: TFChartRange) {
         super(chartContainer);
+        this.series.getDataController().subscribe((operation: DataOperation) => {
+            if (this.visibleDataPoints == 0) {
+                this.visibleDataPoints = this.series.getDataController().getCachedDataSize();
+            };
+
+            if (operation.type == TFChartDataRequestType.PREPEND) {
+                this.visibleOffset -= operation.count;
+            }
+            this.updateAxisRanges();
+            this.redraw();
+        });
+
+        this.setPeriod(period);
+        this.series.setPeriod(this.period);
+        this.series.getDataController().requestData(initialRange, TFChartDataRequestType.APPEND);
+
+        let ctx = this.getCrosshairContext();
+        this.addEventListener("mousemove", (event) => {
+            let location = this.translateMouseEvent(event);
+
+            if (this.isMouseDown) {
+                let delta = -(this.dragStart - location.x);
+                this.pan(delta, false);
+                this.dragStart = location.x;
+            }
+
+            this.drawCrosshair(location);
+
+            event.preventDefault();
+            event.stopPropagation();
+            return false;
+        });
+
+        this.addEventListener("mouseout", (event) => {
+            this.clearCrosshairContext();
+            this.isMouseDown = false;
+            // this.crosshair_canvas.css('cursor', 'crosshair');
+            return false;
+        });
+
+        this.addEventListener("mousedown", (event) => {
+            let location = this.translateMouseEvent(event);
+
+            this.isMouseDown = true;
+            this.dragStart = location.x;
+
+            // this.crosshair_canvas.css('cursor', 'move');
+            event.preventDefault();
+            event.stopPropagation();
+            return false;
+        });
+
+        this.addEventListener("mouseup", (event) => {
+            this.isMouseDown = false;
+            // this.crosshair_canvas.css('cursor', 'crosshair');
+
+            event.preventDefault();
+            event.stopPropagation();
+            return false;
+        });
+
+        this.addEventListener("mousewheel", (event) => {
+
+            let deltaX = event.wheelDeltaX;
+            let deltaY = event.wheelDeltaY;
+            // console.log("dx: " + deltaX + " dy: " + deltaY);
+            if (deltaX) {
+                this.pan(deltaX, false);
+            }
+            if (deltaY) {
+                this.zoom(deltaY, false);
+            }
+
+            this.drawCrosshair(this.translateMouseEvent(event));
+
+            event.preventDefault();
+            event.stopPropagation();
+            return false;
+        });
+
+        // ctx.addEventListener("mouseup", this.mouseUp, false);
     }
 
     public setPeriod(period: number) {
         this.period = period;
-        this.dataController.setPeriod(this.period);
+        this.series.setPeriod(this.period);
+        this.redraw();
     }
 
-    public setVisibleRange(range: TFChartRange) {
-        let area = this.drawableArea();
-        
-        this.visible_data_points = range.span / this.period;
-
-        // number of pixels per time unit (across the whole range)
-        let ratio = area.size.width / this.visible_data_points;
-        let availableRange = this.dataController.getCachedRange();
-
-        if (range.position < availableRange.position && this.dataController.canSupplyData(TFChartDataRequestType.PREPEND)) {
-            let start = Math.min(range.position, availableRange.position);
-            let r = new TFChartRange(start, availableRange.position - start);
-            this.dataController.requestData(r, TFChartDataRequestType.PREPEND);
-        } else if (TFChartRangeMax(range) > TFChartRangeMax(availableRange) && this.dataController.canSupplyData(TFChartDataRequestType.APPEND)) {
-            let start = Math.max(range.position, availableRange.position);
-            let r = new TFChartRange(start, TFChartRangeMax(range) - start);
-            this.dataController.requestData(r, TFChartDataRequestType.PREPEND);
-        } else {
-            this.visible_offset = ((availableRange.position - range.position) / this.period);
-
-            this.checkViewableLimits();
-            this.updateVisible();
-            this.redraw();        
-        }
+    public debug(value: boolean) {
+        this.enableDebug = value;
     }
 
     public reset() {
-        this.visible_offset = 0.0;
-        this.visible_data_points = this.options.initial_data_points;
-        if (this.dataController.hasData()) {
-            this.updateVisible();
+        this.visibleOffset = 0.0;
+        this.visibleDataPoints = this.options.initial_data_points;
+        if (this.series.getDataController().hasData()) {
+            this.updateAxisRanges();
             this.redraw();
         }
     }
 
-    public reflow() {
-        // var width = this.container.width();
-        // var height = this.container.height();
-        // setCanvasSize(this.chart_canvas_name, width, height);
-        // setCanvasSize(this.crosshair_canvas_name, width, height);
-        // this.plot_area = null;
-        // this.drawable_area = null;
-        // this.bounds = null;
-        // if (!isNullOrUndefined(this.data_controller.data) && this.data_controller.data.length != 0) {
-        //     this.updateVisible();
-        //     this.redraw();
-        // }
-    }
-
     public pixelValueAtXValue(x: number): number {
         let area = this.drawableArea();
-        let ppdp = area.size.width / this.visible_data_points;
-        return ((x - this.dataController.getCachedRange().position) / this.period) * ppdp + (this.visible_offset * ppdp);
+        let ppdp = area.size.width / this.visibleDataPoints;
+        return ((x - this.series.getDataController().getCachedRange().position) / this.period) * ppdp + (this.visibleOffset * ppdp);
     }
 
     public pixelValueAtYValue(y: number): number {
@@ -101,20 +149,32 @@ export class TFChart extends TFChartContext {
         return area.origin.y + area.size.height - ((y - this.y_axis.range.position) * y_ratio);
     }
 
-    public valueAtPixelLocation(point: TFChartPoint): TFChartPoint {
+    public dataValueAtXLocation(x: number): number {
+        let visibleRange = this.visibleDataRange(this.visibleOffset, this.visibleDataPoints);
         let area = this.drawableArea();
-        let y_ratio = this.y_axis.range.ratioForSize(area.size.height);
-        let ppdp = area.size.width / this.visible_data_points;
-        let x_value = ((point.x / ppdp) - this.visible_offset) * this.period +  this.dataController.getCachedRange().position;
-        return TFChartPointMake(x_value, (((area.size.height + area.origin.y) - point.y) / y_ratio) + this.y_axis.range.position);
+        let ppdp = area.size.width / this.visibleDataPoints;
+        return visibleRange.position + ((x / ppdp) * this.period);
     }
 
-    public addAnnotation(annotation) {
+    public dataValueAtYLocation(y: number): number {
+        let area = this.drawableArea();
+        let y_ratio = this.y_axis.range.ratioForSize(area.size.height);
+        return ((TFChartRectGetMaxY(area) - y) / y_ratio) + this.y_axis.range.position;
+    }
+
+    public valueAtPixelLocation(point: TFChartPoint): TFChartPoint {
+        return TFChartPointMake(
+                    this.dataValueAtXLocation(point.x),
+                    this.dataValueAtYLocation(point.y)
+                );
+    }
+
+    public addAnnotation(annotation: TFChartAnnotation) {
         this.annotations.push(annotation);
         this.drawAnnotations();
     }
 
-    public removeAnnotation(annotation) {
+    public removeAnnotation(annotation: TFChartAnnotation) {
         let index = this.annotations.indexOf(annotation);
         if (index > -1) {
             this.annotations.splice(index, 1);
@@ -131,16 +191,24 @@ export class TFChart extends TFChartContext {
         this.drawAxis();
         this.drawPlot();
         this.drawAnnotations();
+        if (this.enableDebug) {
+            this.renderDebugInfo();
+        }
+
+                    // console.log("We have data for:\n\t" + TFChartDateTimeRange(this.series.getDataController().getCachedRange()) 
+                    //         + "\n but showing:\n\t" + TFChartDateTimeRange(this.visibleDataRange(this.visibleOffset, this.visibleDataPoints))
+                    //         + "\n axis:\n\t" + TFChartDateTimeRange(this.x_axis.range)
+                    //         + "\n offset: " + this.visibleOffset + " count: " + this.visibleDataPoints
+                    //     );
+
     }
 
     public pan(delta: number, preventRedraw: boolean) {
         let area = this.drawableArea();
-
-        this.visible_offset += (delta / area.size.width) * this.visible_data_points;
-        this.checkViewableLimits();
+        this.visibleOffset = this.checkViewableOffsetLimits(this.visibleDataPoints, this.visibleOffset + ((delta / area.size.width) * this.visibleDataPoints));
 
         if (preventRedraw != true) {
-            this.updateVisible();
+            this.updateAxisRanges();
             this.redraw();
         }
         this.checkDataAvailable();
@@ -148,15 +216,12 @@ export class TFChart extends TFChartContext {
 
     public zoom(delta: number, preventRedraw: boolean) {
         let area = this.drawableArea();
-        let move = (delta / area.size.width) * this.visible_data_points;
-        this.visible_data_points += move;
-        if (this.checkViewableRangeLimits()) {
-            this.visible_offset += move;
-            this.checkViewableOffsetLimits();
-        }
+        let move = (delta / area.size.width) * this.visibleDataPoints;
+        this.visibleDataPoints = this.checkViewableRangeLimits(this.visibleDataPoints + move);
+        this.visibleOffset = this.checkViewableOffsetLimits(this.visibleDataPoints, this.visibleOffset + move);
 
         if (preventRedraw != true) {
-            this.updateVisible();
+            this.updateAxisRanges();
             this.redraw();
         }
         this.checkDataAvailable();
@@ -168,75 +233,71 @@ export class TFChart extends TFChartContext {
         console.log("Plot Area" + area.origin.x + " x " + area.origin.y + " --> " + area.size.width + ", " + area.size.height);
     }
 
+    public setVisibleRange(range: TFChartRange) {
+        let availableRange = this.series.getDataController().getCachedRange();
+
+        this.visibleDataPoints = range.span / this.period;
+        this.visibleOffset = (availableRange.position - range.position) / this.period;
+
+        if (range.position < availableRange.position && this.series.getDataController().canSupplyData(TFChartDataRequestType.PREPEND)) {
+            let start = Math.min(range.position, availableRange.position);
+            let r = new TFChartRange(start, availableRange.position - start);
+            this.series.getDataController().requestData(r, TFChartDataRequestType.PREPEND);
+        } else if (TFChartRangeMax(range) > TFChartRangeMax(availableRange) && this.series.getDataController().canSupplyData(TFChartDataRequestType.APPEND)) {
+            let start = Math.max(range.position, availableRange.position);
+            let r = new TFChartRange(start, TFChartRangeMax(range) - start);
+            this.series.getDataController().requestData(r, TFChartDataRequestType.APPEND);
+        } else {
+            this.visibleOffset = this.checkViewableOffsetLimits(this.visibleDataPoints, ((availableRange.position - range.position) / this.period));
+
+            this.updateAxisRanges();
+            this.redraw();        
+        }
+    }
+
     ////////////// END PUBLIC METHODS /////////////
 
+    protected reflow() {
+        super.reflow();
+        this.bounds = null;
+        if (this.series.getDataController().hasData()) {
+            this.updateAxisRanges();
+            this.redraw();
+        }
+    }
+
     private checkDataAvailable() {
-        let availableRange = this.dataController.getCachedRange();
-        if (this.visible_offset > 0.0 && this.dataController.canSupplyData(TFChartDataRequestType.PREPEND)) {
-            let start_x = this.x_axis.range.position - this.x_axis.range.span;
-            let range =  new TFChartRange(start_x, availableRange.position - start_x - this.period);
-            this.dataController.requestData(range, TFChartDataRequestType.PREPEND);
-        }
+        // let range: TFChartRange;
+        let availableRange = this.series.getDataController().getCachedRange();
+        let visibleRange = this.visibleDataRange(this.visibleOffset, this.visibleDataPoints);
 
-        if (this.visible_data_points - this.visible_offset > this.dataController.getCachedDataSize() && this.dataController.canSupplyData(TFChartDataRequestType.APPEND)) {
+        if (this.visibleOffset > 0.0 && this.series.getDataController().canSupplyData(TFChartDataRequestType.PREPEND)) {
+            let startX = availableRange.position - this.x_axis.range.span;
+            let range =  new TFChartRange(startX, availableRange.position - startX - this.period);
+            this.series.getDataController().requestData(range, TFChartDataRequestType.PREPEND);
+        } else if (this.visibleDataPoints - this.visibleOffset > this.series.getDataController().getCachedDataSize() && this.series.getDataController().canSupplyData(TFChartDataRequestType.APPEND)) {
             let range =  new TFChartRange(TFChartRangeMax(availableRange) + this.period, this.x_axis.range.span)
-            this.dataController.requestData(range, TFChartDataRequestType.APPEND);
+            this.series.getDataController().requestData(range, TFChartDataRequestType.APPEND);
         }
     }
 
-    public reevaluateVerticalRange(data) {
-        let min = this.y_axis.range.position;
-        let max = min + this.y_axis.range.span;
-        let self = this;
-        for (let point of data) {
-            if (point.timestamp > TFChartRangeMax(self.x_axis.range)) {
-                return;
-            } else if (point.timestamp >= self.x_axis.range.position) {
-                max = Math.max(max, point.high);
-                min = Math.min(min, point.low);
-            }
-        }
-        if (max !== min) {
-            let y_range = new TFChartRange(min, max - min);
-            if (!this.y_axis.range.equal(y_range)) {
-                this.y_axis.range = y_range;
-                if (this.options.view_range !== null) {
-                    this.options.view_range(this, this.x_axis.range, this.y_axis.range);
-                }
-            }
-        }
-    };
-
-    private checkViewableRangeLimits(): boolean {
-        let result = Math.max(this.visible_data_points, this.options.min_data_points);
-        result = Math.min(result, this.options.max_data_points);
-
-        let restricted = (this.visible_data_points === result);
-        this.visible_data_points = result;
-        return restricted;
+    private checkViewableRangeLimits(visibleDataPoints: number): number {
+        return Math.min(
+                    Math.max(visibleDataPoints, this.options.min_data_points),
+                    this.options.max_data_points
+                );
     }
 
-    private checkViewableOffsetLimits(): boolean {
+    private checkViewableOffsetLimits(visibleDataPoints: number, visibleOffset: number): number {
         let result: number;
         let area = this.drawableArea();
-        let data_points = this.dataController.getCachedDataSize();
-        if (this.visible_data_points >= data_points) {
-            result = Math.max(this.visible_offset, 1.0);
-            result = Math.min(result, (this.visible_data_points - data_points));
+        let data_points = this.series.getDataController().getCachedDataSize();
+        if (visibleOffset > 0.0) {
+            result = Math.min(visibleOffset, visibleDataPoints / 2.0);
         } else {
-            if (this.visible_offset > 0.0) {
-                result = Math.min(this.visible_offset, this.visible_data_points / 2.0);
-            } else {
-                result = Math.max(this.visible_offset, -(data_points - (this.visible_data_points / 2.0)));
-            }
+            result = Math.max(visibleOffset, -(data_points - (visibleDataPoints / 2.0)));
         }
-        let restricted = (this.visible_offset === result);
-        this.visible_offset = result;
-        return restricted;
-    }
-
-    private checkViewableLimits(): boolean {
-        return this.checkViewableRangeLimits() && this.checkViewableOffsetLimits();
+        return result;
     }
 
     private periodFloor(value: number): number {
@@ -248,61 +309,56 @@ export class TFChart extends TFChartContext {
     }
 
     private chartBounds(): TFChartRect {
-        let tl = this.valueAtPixelLocation(TFChartPointMake(this.x_axis.data_padding, this.y_axis.data_padding));
-        let canvasSize = this.getCanvasSize()
-        let br = this.valueAtPixelLocation(TFChartPointMake(
-                                                Math.round(canvasSize.width - this.x_axis.padding) + 0.5 - (this.x_axis.data_padding * 2), 
-                                                Math.round(canvasSize.height - this.y_axis.padding) + 0.5 - (this.y_axis.data_padding * 2))
-                                            );
+        let horizontalRange = this.visibleDataRange(this.visibleOffset, this.visibleDataPoints);
+        let verticalRange = this.series.getVerticalRangeForHorizontal(horizontalRange);
 
-        this.bounds = TFChartRectMake(tl.x, br.y, br.x - tl.x, tl.y - br.y);
+        this.bounds = TFChartRectMake(
+                                horizontalRange.position, 
+                                verticalRange.position,
+                                TFChartRangeMax(horizontalRange),
+                                TFChartRangeMax(verticalRange)
+                            );
 
         return this.bounds;
     }
 
-    private updateVisible() {
+    /**
+     * Get the range in terms of data space for the viewport
+     */
+    private visibleDataRange(visibleOffset: number, visibleDataPoints: number): TFChartRange {
         let area = this.drawableArea();
-        let availableRange = this.dataController.getCachedRange();
+        let dataController = this.series.getDataController();
+        let availableRange = dataController.getCachedRange();
 
-        let ppdp = area.size.width / this.visible_data_points;
-        let offset = this.visible_offset * this.period;
+        let ppdp = area.size.width / this.visibleDataPoints;
+        let offset = this.visibleOffset * this.period;
         let start_x = this.periodFloor(availableRange.position - offset + (this.period / 2.0));
         let end_x = this.periodCeil(availableRange.position - offset - (this.period / 2.0) + ((area.size.width / ppdp) * this.period));
 
-        let min = null;
-        let max = null;
-        let data = this.dataController.getCachedData();
-        for (let point of data) {
-            if (point.timestamp > end_x) {
-                return;
-            } else if (point.timestamp >= start_x) {
-                max = (max == null) ? point.high : Math.max(max, point.high);
-                min = (min == null) ? point.low : Math.min(min, point.low);
-            }
-        }
-
-        this.x_axis.range = new TFChartRange(start_x, end_x - start_x);
-        if (max !== min) {
-            this.y_axis.range = new TFChartRange(min, max - min);
-        }
-        if (this.options.view_range !== null) {
-            this.options.view_range(this, this.x_axis.range, this.y_axis.range);
-        }
+        return TFChartRangeMake(start_x, end_x - start_x)
     }
 
+    private updateAxisRanges() {
+        this.x_axis.range = this.visibleDataRange(this.visibleOffset, this.visibleDataPoints);
+        this.y_axis.range = this.series.getVerticalRangeForHorizontal(this.x_axis.range);
+    }
+
+    /**
+     * Project the chart onto the viewport using the renderer supplied by the series
+     */
     private drawPlot() {
-        if (this.dataController.hasData()) {
-            let area = this.plotArea();
-            let ctx = this.getDrawingContext();
-            ctx.save();
-            ctx.rect(area.origin.x, area.origin.y, area.size.width, area.size.height);
-            ctx.clip();
-            // TODO: should we only give the renderer the visible data?
-            this.renderer.render(this.dataController.getCachedData(), this);
-            ctx.restore();
-        }
+        let area = this.plotArea();
+        let ctx = this.getDrawingContext();
+        ctx.save();
+        ctx.rect(area.origin.x, area.origin.y, area.size.width, area.size.height);
+        ctx.clip();
+        this.series.render(this.visibleDataRange(this.visibleOffset, this.visibleDataPoints), this);
+        ctx.restore();
     }
 
+    /**
+     * Project any annotations onto the viewport
+     */
     private drawAnnotations() {
         if (this.annotations.length > 0) {
             let bounds = this.plotArea();
@@ -318,9 +374,11 @@ export class TFChart extends TFChartContext {
         }
     }
 
+    /**
+     * Draw the chart axis with tick marks
+     */
     private drawAxis() {
         let ctx = this.getDrawingContext();
-
         let area = this.plotArea();
 
         ctx.strokeStyle = this.options.theme.axisColor;
@@ -393,6 +451,9 @@ export class TFChart extends TFChartContext {
         }
     }
 
+    /**
+     * Draw a crosshair at the current 'point' with values reflected on the axis
+     */
     private drawCrosshair(point: TFChartPoint) {
         let area = this.plotArea();
 
@@ -465,7 +526,19 @@ export class TFChart extends TFChartContext {
         }
     }
 
-    private onResize() {
-        this.reflow();
+    private renderDebugInfo() {
+        let area = this.plotArea();
+        let ctx = this.getDrawingContext();
+        // ctx.save();
+        ctx.font = "10px Arial";
+        ctx.fillStyle = this.options.theme.axisColor;
+        ctx.fillText("Offset: " + this.visibleOffset, 15, 15);
+        ctx.fillText("Span: " + this.visibleDataPoints, 15, 28);
+        ctx.fillText("Data Points: " + this.series.getDataController().getCachedDataSize(), 15, 41);
+        // ctx.restore();
+
     }
+    // private onResize() {
+    //     this.reflow();
+    // }
 }

@@ -1,6 +1,5 @@
-import { TFChartAxisFormatter, AxisValue } from '../tfchart_axis_formatter'
-import { TFChartRange } from '../tfchart_utils'
-import { Axis } from '../tfchart_axis_formatter'
+import { TFChartAxisFormatter, AxisValue, Axis } from './tfchart_axis_formatter'
+import { TFChartRange, TFChartRangeMax } from '../tfchart_utils'
 import * as moment from 'moment';
 
 interface Interval {
@@ -67,7 +66,7 @@ export class DateTimeAxisFormatter extends TFChartAxisFormatter {
         let stepSize = magMsd * magPow;
 
         let i = 0;
-        for (let i = 0; i < this.intervals.length - 1; ++i) {
+        for (i = 0; i < this.intervals.length - 1; ++i) {
             if (stepSize < (this.intervals[i].count * this.timeUnitSize[this.intervals[i].unit])) {
                 break;
             }
@@ -78,7 +77,7 @@ export class DateTimeAxisFormatter extends TFChartAxisFormatter {
         stepSize = size * this.timeUnitSize[unit];
 
         let lower = stepSize * Math.floor(axis.range.position / stepSize);
-        let upper = stepSize * Math.ceil((axis.range.position + axis.range.span) / stepSize);
+        let upper = stepSize * Math.ceil(TFChartRangeMax(axis.range) / stepSize);
 
         let val = lower;
         while(1) {

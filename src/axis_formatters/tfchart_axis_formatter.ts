@@ -1,4 +1,4 @@
-import { TFChartRect, TFChartRange } from './tfchart_utils'
+import { TFChartRect, TFChartRange } from '../tfchart_utils'
 
 export class Axis {
     public range: TFChartRange = new TFChartRange(0.0, 0.0);

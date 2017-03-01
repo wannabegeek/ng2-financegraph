@@ -6,5 +6,5 @@ export interface RequestResults<T> {
 }
 
 export abstract class TFChartDataSupplier<T> {
-    public abstract requestData(range: TFChartRange, period: number) : Promise<RequestResults<T>>;
+    public abstract requestData(range: TFChartRange, period: number): Promise<RequestResults<T>>;
 }
