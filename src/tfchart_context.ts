@@ -72,8 +72,8 @@ export abstract class TFChartContext {
     }
 
     public translateMouseEvent(event: MouseEvent): TFChartPoint {
-        let mouseX = event.pageX - this.chartContainer.offsetLeft;
-        let mouseY = event.pageY - this.chartContainer.offsetTop;
+        let mouseX = event.offsetX - this.crosshairCanvas.offsetLeft;
+        let mouseY = event.offsetY - this.crosshairCanvas.offsetTop;
 
         return TFChartPointMake(mouseX, mouseY);
     }

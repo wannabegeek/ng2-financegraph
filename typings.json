@@ -1,8 +1,0 @@
-{
-  "name": "ng2-split-pane",
-  "main": "index.d.ts",
-  "author": "Tom Fewster",
-  "description": "A simple resizable split pane Angular 2 library",
-  "globalDevDependencies": {
-  }
-}

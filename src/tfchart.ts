@@ -33,7 +33,7 @@ export class TFChart extends TFChartContext {
         controller: null
     };
 
-    public constructor(chartContainer: any, private series: TFChartSeries, private period: number, initialRange: TFChartRange) {
+    public constructor(chartContainer: any, private series: TFChartSeries, private period: number) {
         super(chartContainer);
         this.series.getDataController().subscribe((operation: DataOperation) => {
             if (this.visibleDataPoints == 0) {
@@ -49,7 +49,10 @@ export class TFChart extends TFChartContext {
 
         this.setPeriod(period);
         this.series.setPeriod(this.period);
-        this.series.getDataController().requestData(initialRange, TFChartDataRequestType.APPEND);
+        this.series.getDataController().requestInitialRange()
+            .then((initialRange) => {
+                this.series.getDataController().requestData(initialRange, TFChartDataRequestType.APPEND);
+            });
 
         let ctx = this.getCrosshairContext();
         this.addEventListener("mousemove", (event) => {
@@ -64,7 +67,7 @@ export class TFChart extends TFChartContext {
             this.drawCrosshair(location);
 
             event.preventDefault();
-            event.stopPropagation();
+            // event.stopPropagation();
             return false;
         });
 
@@ -535,6 +538,7 @@ export class TFChart extends TFChartContext {
         ctx.fillText("Offset: " + this.visibleOffset, 15, 15);
         ctx.fillText("Span: " + this.visibleDataPoints, 15, 28);
         ctx.fillText("Data Points: " + this.series.getDataController().getCachedDataSize(), 15, 41);
+        ctx.fillText("Visible Points: " + this.visibleDataPoints, 15, 54);
         // ctx.restore();
 
     }

@@ -17,16 +17,18 @@ export class TFChartLineSeries extends TFChartSeries {
     }
 
     public getVerticalRangeForHorizontal(horizontalRange: TFChartRange): TFChartRange {
-        let max = 0;
+        let min = null;
+        let max = null;
         let data = this.dataController.getCachedData<TFChartLineDataType>();
         for (let point of data) {
             if (point.timestamp > TFChartRangeMax(horizontalRange)) {
                 break;
             } else if (point.timestamp >= horizontalRange.position) {
-                max = Math.max(max, point.value);
+                max = (max == null) ? point.value : Math.max(max, point.value);
+                min = (min == null) ? point.value : Math.min(min, point.value);
             }
         }
 
-        return new TFChartRange(0, max);
+        return new TFChartRange(min, max - min);
     }
 }

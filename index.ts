@@ -4,7 +4,7 @@ import { CommonModule } from '@angular/common';
 import { TFChartComponent } from './src/tfchart.component';
 export { TFChart } from './src/tfchart';
 
-export { TFChartDataSupplier } from './src/tfchart_datasupplier';
+export { TFChartDataSupplier, RequestResults } from './src/tfchart_datasupplier';
 
 export { TFChartAnnotation } from './src/annotations/tfchart_annotation';
 export { TFChartLine } from './src/annotations/tfchart_annotation_line';
@@ -24,7 +24,33 @@ export { TFChartBarChartRenderer } from './src/renderers/tfchart_renderer_barcha
 export { TFChartCandlestickRenderer } from './src/renderers/tfchart_renderer_candlestick';
 export { TFChartLineChartRenderer } from './src/renderers/tfchart_renderer_line';
 
-export { TFChartSize, TFChartRangeMax, TFChartRangeMake, TFChartRange, TFChartRect, TFChartRectMake, TFChartRectGetMaxY, TFChartPoint, TFChartPointMake } from './src/tfchart_utils'
+export { TFChartSeries } from './src/series/tfchart_series';
+export { TFChartBarchartSeries, TFChartBarchartDataType } from './src/series/tfchart_series_barchart';
+export { TFChartCandlestickSeries, TFChartCandlestickDataType } from './src/series/tfchart_series_candlestick';
+export { TFChartLineSeries, TFChartLineDataType } from './src/series/tfchart_series_line';
+
+export {
+            TFChartRangeMax,
+            TFChartRangeMake,
+            TFChartRange,
+            TFChartLocationInRange,
+            TFChartEqualRanges,
+            TFChartIntersectionRange,
+            TFChartUnionRange,
+
+            TFChartSize,
+            TFChartSizeMake,
+
+            TFChartRect,
+            TFChartRectMake,
+            TFChartRectGetMinX,
+            TFChartRectGetMaxX,
+            TFChartRectGetMinY,
+            TFChartRectGetMaxY,
+
+            TFChartPoint,
+            TFChartPointMake
+        } from './src/tfchart_utils'
 
 @NgModule({
   imports: [CommonModule],

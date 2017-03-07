@@ -14,7 +14,7 @@ export class TFChartRange{
     }
 
     public intersects(location: number): boolean {
-        return (location >= this.position && location <= this.position + this.span);
+        return (location >= this.position && location <= TFChartRangeMax(this));
     }
 
     public ratioForSize(size: number): number {

@@ -40,11 +40,15 @@ export class TFChartSimpleDataController<T> extends TFChartDataController {
         return (this.dataExhausted & operation) != operation;
     }
 
+    public requestInitialRange(): Promise<TFChartRange> {
+        return this.dataSupplier.initialRange(this.period);
+    }
+
     public requestData(range: TFChartRange, operation: TFChartDataRequestType) {
         // console.log("think we want: " + range + " currently have " + this.dataRange);
         // we don't want any gaps in our cached data...
         if (this.dataRange.position == -1) {
-            this.dataRange = TFChartRangeMake(range.position, 0);
+            this.dataRange = TFChartRangeMake(range.position - this.period, 0);
         }
 
         if (operation === TFChartDataRequestType.PREPEND) {
@@ -94,7 +98,7 @@ export class TFChartSimpleDataController<T> extends TFChartDataController {
     }
 
     public getCachedDataSize(): number {
-        return this.data.length;
+        return this.dataRange.span / this.period;
     }
 
     private setData(data: T[], range: TFChartRange) {

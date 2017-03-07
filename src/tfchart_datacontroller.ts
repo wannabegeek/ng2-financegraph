@@ -30,6 +30,7 @@ export abstract class TFChartDataController {
     public abstract setPeriod(period: number);
     public abstract subscribe(subscriber: DataSubscription);
     
+    public abstract requestInitialRange(): Promise<TFChartRange>;
     public abstract requestData(range: TFChartRange, operation: TFChartDataRequestType);
     
     public abstract getCachedRange(): TFChartRange;

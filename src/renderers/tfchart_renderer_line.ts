@@ -24,15 +24,17 @@ export class TFChartLineChartRenderer extends TFChartRenderer {
     public render(data: TFChartLineDataType[], visibleRange: TFChartRange, chart: TFChart) {
         var ctx = chart.getDrawingContext();
 
-        ctx.strokeStyle = this.theme.lineColor;
-        ctx.beginPath();
+        if (data.length > 0) {
+            ctx.strokeStyle = this.theme.lineColor;
+            ctx.beginPath();
 
-        ctx.moveTo(chart.pixelValueAtXValue(data[0].timestamp), chart.pixelValueAtYValue(data[0].value));
+            ctx.moveTo(chart.pixelValueAtXValue(data[0].timestamp), chart.pixelValueAtYValue(data[0].value));
 
-        for (let point of data) {
-            ctx.lineTo(chart.pixelValueAtXValue(point.timestamp), chart.pixelValueAtYValue(point.value));
+            for (let point of data) {
+                ctx.lineTo(chart.pixelValueAtXValue(point.timestamp), chart.pixelValueAtYValue(point.value));
+            }
+
+            ctx.stroke();
         }
-
-        ctx.stroke();
     }
 }

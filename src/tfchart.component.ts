@@ -31,7 +31,6 @@ export class Axis {
 export class TFChartComponent {
     @Input('period') period: number;
     @Input('series') series: TFChartSeries;
-    @Input('initialRange') initialRange: TFChartRange;
     @Input('enableDebug') enableDebug: boolean;
 
     @ViewChild("chartContainer") chartContainerRef: ElementRef;
@@ -39,8 +38,8 @@ export class TFChartComponent {
     private chart: TFChart;
 
     ngAfterViewInit() {
-        console.log("Initialising chart [period: " + this.period + "] range: " + this.initialRange);
-        this.chart = new TFChart(this.chartContainerRef.nativeElement, this.series, this.period, this.initialRange);
+        console.log("Initialising chart [period: " + this.period + "]");
+        this.chart = new TFChart(this.chartContainerRef.nativeElement, this.series, this.period);
         this.chart.debug(this.enableDebug);
     }
 
