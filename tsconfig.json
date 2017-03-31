@@ -11,11 +11,13 @@
     "outDir": "./dist",
     "declaration": true
   },
-  "files": [
-    "index.ts"
-  ],
   "exclude": [
+    "example",
     "node_modules",
-    "dist"
-  ]
+    "dist",
+    "**/*.spec.ts"
+  ],
+  "angularCompilerOptions": {
+    "genDir": "compiled"
+  }
 }
