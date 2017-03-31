@@ -62,10 +62,10 @@ export function delayedInit(): ModuleWithProviders {
 @NgModule({
   imports: [CommonModule],
   declarations: [
-    TFChartComponent,
+    TFChartComponent
   ],
   exports: [
-    TFChartComponent,
+    TFChartComponent
   ]
 })
 export class TFChartModule {

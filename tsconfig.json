@@ -10,7 +10,12 @@
     "sourceMap": true,
     "outDir": "./dist",
     "declaration": true
+    // "strictNullChecks": true
   },
+  "include": [
+    "src/*",
+    "src/**/*"
+  ],
   "exclude": [
     "example",
     "node_modules",
@@ -18,6 +23,7 @@
     "**/*.spec.ts"
   ],
   "angularCompilerOptions": {
-    "genDir": "compiled"
+    "genDir": "./dist",
+    "strictMetadataEmit": true
   }
 }
