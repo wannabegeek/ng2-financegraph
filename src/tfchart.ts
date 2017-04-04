@@ -47,7 +47,6 @@ export class TFChart extends TFChartContext {
             this.redraw();
         });
 
-        this.setPeriod(period);
         this.series.setPeriod(this.period);
         this.series.getDataController().requestInitialRange()
             .then((initialRange) => {
@@ -122,9 +121,16 @@ export class TFChart extends TFChartContext {
     }
 
     public setPeriod(period: number) {
+        let currentRange: TFChartRange = this.getVisibleRange();
+        console.log("getting visible " + TFChartDateTimeRange(currentRange));
+        
         this.period = period;
         this.series.setPeriod(this.period);
-        this.redraw();
+        
+        this.series.getDataController().requestData(currentRange, TFChartDataRequestType.APPEND);
+
+        console.log("setting visible " + TFChartDateTimeRange(currentRange));
+        this.setVisibleRange(currentRange);
     }
 
     public debug(value: boolean) {
@@ -236,26 +242,21 @@ export class TFChart extends TFChartContext {
         console.log("Plot Area" + area.origin.x + " x " + area.origin.y + " --> " + area.size.width + ", " + area.size.height);
     }
 
-    public setVisibleRange(range: TFChartRange) {
-        let availableRange = this.series.getDataController().getCachedRange();
+    public getVisibleRange(): TFChartRange {
+        return this.visibleDataRange(this.visibleOffset, this.visibleDataPoints);
+    }
 
+    public setVisibleRange(range: TFChartRange) {
+        let area = this.drawableArea();
+        let availableRange = this.series.getDataController().getCachedRange();
+    
         this.visibleDataPoints = range.span / this.period;
         this.visibleOffset = (availableRange.position - range.position) / this.period;
+        console.log("Set visible range: " + range.span + " for period " + this.period + " visible: " + this.visibleDataPoints);
 
-        if (range.position < availableRange.position && this.series.getDataController().canSupplyData(TFChartDataRequestType.PREPEND)) {
-            let start = Math.min(range.position, availableRange.position);
-            let r = new TFChartRange(start, availableRange.position - start);
-            this.series.getDataController().requestData(r, TFChartDataRequestType.PREPEND);
-        } else if (TFChartRangeMax(range) > TFChartRangeMax(availableRange) && this.series.getDataController().canSupplyData(TFChartDataRequestType.APPEND)) {
-            let start = Math.max(range.position, availableRange.position);
-            let r = new TFChartRange(start, TFChartRangeMax(range) - start);
-            this.series.getDataController().requestData(r, TFChartDataRequestType.APPEND);
-        } else {
-            this.visibleOffset = this.checkViewableOffsetLimits(this.visibleDataPoints, ((availableRange.position - range.position) / this.period));
-
-            this.updateAxisRanges();
-            this.redraw();        
-        }
+        this.updateAxisRanges();
+        this.redraw();
+        this.checkDataAvailable();
     }
 
     ////////////// END PUBLIC METHODS /////////////
@@ -539,6 +540,7 @@ export class TFChart extends TFChartContext {
         ctx.fillText("Span: " + this.visibleDataPoints, 15, 28);
         ctx.fillText("Data Points: " + this.series.getDataController().getCachedDataSize(), 15, 41);
         ctx.fillText("Visible Points: " + this.visibleDataPoints, 15, 54);
+        ctx.fillText("Visible Points: " + TFChartDateTimeRange(this.getVisibleRange()), 15, 67);
         // ctx.restore();
 
     }

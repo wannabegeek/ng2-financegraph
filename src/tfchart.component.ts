@@ -1,4 +1,4 @@
-import { Component, ViewChild, ElementRef, Input, AfterViewInit } from '@angular/core';
+import { Component, ViewChild, ElementRef, Input, AfterViewInit, OnChanges, SimpleChange } from '@angular/core';
 import { TFChartSize, TFChartRangeMax, TFChartRange, TFChartRect, TFChartRectMake, TFChartPoint, TFChartPointMake } from './tfchart_utils'
 import { TFChartRenderer } from './renderers/tfchart_renderer'
 import { TFChartAnnotation } from './annotations/tfchart_annotation'
@@ -28,7 +28,7 @@ export class Axis {
     `],
     host: {'style': 'height: 100%'}
 })
-export class TFChartComponent implements AfterViewInit {
+export class TFChartComponent implements AfterViewInit, OnChanges {
     @Input('period') period: number;
     @Input('series') series: TFChartSeries;
     @Input('enableDebug') enableDebug: boolean;
@@ -41,5 +41,13 @@ export class TFChartComponent implements AfterViewInit {
         console.log("Initialising chart [period: " + this.period + "]");
         this.chart = new TFChart(this.chartContainerRef.nativeElement, this.series, this.period);
         this.chart.debug(this.enableDebug);
+    }
+
+    ngOnChanges(changes) {
+        if (changes.period) {
+            if (this.chart) {
+                this.chart.setPeriod(this.period);
+            }
+        }
     }
 }

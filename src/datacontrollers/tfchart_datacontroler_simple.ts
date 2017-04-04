@@ -22,6 +22,7 @@ export class TFChartSimpleDataController<T> extends TFChartDataController {
         // we need to clear our current cache and requre a re-request
         this.data = [];
         this.dataRange.span = 0;
+        this.dataExhausted = 0;
     }
 
     public subscribe(subscriber: DataSubscription) {
@@ -45,7 +46,7 @@ export class TFChartSimpleDataController<T> extends TFChartDataController {
     }
 
     public requestData(range: TFChartRange, operation: TFChartDataRequestType) {
-        // console.log("think we want: " + range + " currently have " + this.dataRange);
+        console.log("think we want: " + range + " currently have " + this.dataRange + " for period: " + this.period);
         // we don't want any gaps in our cached data...
         if (this.dataRange.position == -1) {
             this.dataRange = TFChartRangeMake(range.position - this.period, 0);

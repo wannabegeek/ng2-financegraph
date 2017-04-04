@@ -91,7 +91,7 @@ export class DateTimeAxisFormatter extends TFChartAxisFormatter {
         return result;
     }
 
-    public format(value: number, axis, is_crosshair: boolean): AxisValue {
+    public format(value: number, axis: Axis, is_crosshair: boolean): AxisValue {
         // var m = new Moment();
         if (is_crosshair == true) {
             return {text: moment(value).utc().format("YYYY-MM-DD HH:mm:ss"), is_key:false};
