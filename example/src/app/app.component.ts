@@ -8,29 +8,60 @@ import { TFChartDataSupplier, RequestResults } from '../../../src/tfchart_datasu
 // import { * } from '../../../index';
 
 class DataSupplier extends TFChartDataSupplier<TFChartCandlestickDataType> {
-    public requestData(range: TFChartRange, period: number): Promise<RequestResults<TFChartCandlestickDataType>> {
+
+    constructor(private backendService: BackendService) {
+        super();
+    }
+
+    public fetchInitialData(period: number): Promise<TFChartRange> {
+        return new Promise((resolve, reject) => {
+            // resolve(TFChartRangeMake(1432622400000, 59700000));
+            resolve(TFChartRangeMake(1015200000000, period * 144));
+        });    
+    }
+
+    public fetchPaginationData(range: TFChartRange, period: number): Promise<RequestResults<TFChartCandlestickDataType>> {
         // console.log("Received request for data in range: " + TFChartDateTimeRange(range) + " expecting " + (range.span / period) + " elements");
         return new Promise((resolve, reject) => {
-            let data = AppComponent.getData();
-            let result: TFChartCandlestickDataType[] = []; 
-            for (let point of data) {
-                if (TFChartLocationInRange(point.timestamp, range)) {
-                    result.push(point);
-                }
-            }
-            if (result.length > 1) {
-                let resultRange = TFChartRangeMake(result[0].timestamp, result[(result.length - 1)].timestamp - result[0].timestamp);
-                // console.log("Supplying data with range: " + TFChartDateTimeRange(resultRange) + " in " + result.length + " elements");
-                resolve({
-                    data: result,
-                    range: resultRange
+            this.backendService.getChartData(1, period, range.position, TFChartRangeMax(range))
+                .then(data => {
+                    console.log(data);
+                    let result: TFChartCandlestickDataType[] = [];
+                    for (let point of data.results) {
+                        if (range.intersects(point.timestamp)) {
+                            result.push(point);
+                        }
+                    }
+                    if (result.length > 1) {
+                        let resultRange = TFChartRangeMake(result[0].timestamp, result[(result.length - 1)].timestamp - result[0].timestamp);
+                        // console.log("Supplying data with range: " + TFChartDateTimeRange(resultRange) + " in " + result.length + " elements");
+                        resolve({
+                            data: result,
+                            range: resultRange
+                        });
+                    } else {
+                        reject("No data in range " + range);
+                    }
+                })
+                .catch(err => { 
+                    console.error(err);
+                    reject(err);
                 });
-            } else {
-                reject("No data in range");
-            }
+
+                // .then(data => {
+                //     let results = data['results'];
+                //     if (results.length >= 1) {
+                //         let start = results[0].timestamp;
+                //         let end = results[results.length - 1].timestamp;
+                //         resolve(TFChartRangeMake(start, end - start));
+                //     } else {
+                //         reject("Not enough data");
+                //     }
+                // });
         });
     }
 }
+
 
 @Component({
     selector: 'app-root',

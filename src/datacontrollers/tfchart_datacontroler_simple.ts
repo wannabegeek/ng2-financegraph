@@ -1,5 +1,5 @@
 import { TFChartRange, TFChartRangeMake, TFChartIntersectionRange, TFChartEqualRanges, TFChartRangeMax, TFChartUnionRange } from '../tfchart_utils'
-import { TFChartDataController, TFChartDataRequestType, DataSubscription, TFChartDataOperationType, DataOperation } from '../tfchart_datacontroller'
+import { TFChartDataController, TFChartDataRequestType, TFChartDataAvailability, DataSubscription, TFChartDataOperationType, DataOperation } from '../tfchart_datacontroller'
 import { TFChartDataSupplier, RequestResults } from '../tfchart_datasupplier'
 import { Subject } from 'rxjs/Subject'
 
@@ -10,6 +10,9 @@ export class TFChartSimpleDataController<T> extends TFChartDataController {
     private pending_request_queue = [];
     private dataExhausted: number = 0;
     private observers: Subject<DataOperation>;
+
+    private requestInProgress: boolean = false;
+    private requestBacklog: TFChartRange[] = [];
 
     public constructor(private dataSupplier: TFChartDataSupplier<T>) {
         super();
@@ -37,56 +40,107 @@ export class TFChartSimpleDataController<T> extends TFChartDataController {
         )
     }
 
-    public canSupplyData(operation: TFChartDataRequestType): boolean {
-        return (this.dataExhausted & operation) != operation;
-    }
-
-    public requestInitialRange(): Promise<TFChartRange> {
-        return this.dataSupplier.initialRange(this.period);
-    }
-
-    public requestData(range: TFChartRange, operation: TFChartDataRequestType) {
-        console.log("think we want: " + range + " currently have " + this.dataRange + " for period: " + this.period);
-        // we don't want any gaps in our cached data...
+    public canSupplyData(range: TFChartRange): TFChartDataAvailability {
         if (this.dataRange.position == -1) {
             this.dataRange = TFChartRangeMake(range.position - this.period, 0);
         }
 
-        if (operation === TFChartDataRequestType.PREPEND) {
-            range = TFChartUnionRange(range, this.dataRange);
-            range.span -= this.dataRange.span;
-        } else {
-            let currentEnd = TFChartRangeMax(this.dataRange) + this.period;
-            range = TFChartRangeMake(currentEnd, TFChartRangeMax(range) - currentEnd);
-        }
+        let operation: TFChartDataRequestType;
 
-        if (range.span > 0) {
-            this.dataSupplier.requestData(range, this.period)
-                    .then((results) => {
-                        switch (operation) {
-                            case TFChartDataRequestType.PREPEND:   
-                                if (range.position > results.range.position) {
-                                    this.dataExhausted |= operation;   
-                                }
-                                this.prependData(results.data, results.range);
-                                break;
-                            case TFChartDataRequestType.APPEND:   
-                                if (range.position < results.range.position) {
-                                    this.dataExhausted |= operation;   
-                                }
-                                this.appendData(results.data, results.range);
-                                break;
-                        }
-                    })
-                    .catch((err) => {
-                        switch (operation) {
-                            case TFChartDataRequestType.PREPEND:   
-                            case TFChartDataRequestType.APPEND:
-                                this.dataExhausted |= operation
-                                break;
-                        }
-                        console.log(err + " for " + operation);
-                    });
+        if (range.position < this.dataRange.position) {
+            operation = TFChartDataRequestType.PREPEND;
+        } else if (TFChartRangeMax(range) > TFChartRangeMax(this.dataRange)) {
+            operation = TFChartDataRequestType.APPEND;
+        } else {
+            throw new Error("invalid data request " + range);
+        }
+        
+        // console.log("Can supply for: " + operation + " ? " + this.dataExhausted + " " + ((this.dataExhausted & operation) != operation ? TFChartDataAvailability.AVAILABLE : TFChartDataAvailability.NOT_AVAILABLE));
+        return (this.dataExhausted & operation) != operation ? TFChartDataAvailability.AVAILABLE : TFChartDataAvailability.NOT_AVAILABLE;
+    }
+
+    public checkDataExhausted(results: RequestResults<T>) {
+        if (!results.moreDataPreceeds) {
+            this.dataExhausted |= TFChartDataRequestType.PREPEND;   
+        }
+        if (!results.moreDataSucceeds) {
+            this.dataExhausted |= TFChartDataRequestType.APPEND;   
+        }
+        console.log("Data exhaused: " + this.dataExhausted);
+        console.log(results);
+    }
+
+    public requestInitialData() {
+        // console.log("Requesting initial");
+        let suggestedRange = TFChartRangeMake(0, 100 * this.period);        
+        this.requestInProgress = true;
+        this.dataSupplier.fetchInitialData(suggestedRange, this.period)
+            .then((results: RequestResults<T>) => {
+                    // console.log("Initial responded");
+                    this.checkDataExhausted(results);
+                    this.appendData(results.data, results.range);
+                })
+                .catch((err) => {
+                    this.dataExhausted |= TFChartDataRequestType.PREPEND | TFChartDataRequestType.APPEND;
+                })
+                .then(() => {
+                    this.requestInProgress = false;
+                    this.processPendingRequestQueue();
+                });
+    }
+
+    public requestData(range: TFChartRange) {
+        if (this.requestInProgress) {
+            // console.log("Request already in grogress - queuing");
+            this.requestBacklog.push(range);
+        } else {
+            // console.log("think we want: " + range + " currently have " + this.dataRange + " for period: " + this.period);
+            // we don't want any gaps in our cached data...
+            if (this.dataRange.position == -1) {
+                this.dataRange = TFChartRangeMake(range.position - this.period, 0);
+            }
+
+            let operation: TFChartDataRequestType;
+
+            if (range.position < this.dataRange.position) {
+                operation = TFChartDataRequestType.PREPEND;
+            } else if (TFChartRangeMax(range) > TFChartRangeMax(this.dataRange)) {
+                operation = TFChartDataRequestType.APPEND;
+            } else {
+                throw new Error("invalid data request " + range);
+            }
+
+            if (operation === TFChartDataRequestType.PREPEND) {
+                range = TFChartUnionRange(range, this.dataRange);
+                range.span -= this.dataRange.span;
+            } else {
+                let currentEnd = TFChartRangeMax(this.dataRange) + this.period;
+                range = TFChartRangeMake(currentEnd, TFChartRangeMax(range) - currentEnd);
+            }
+
+            if (range.span > 0) {
+                this.requestInProgress = true;
+                this.dataSupplier.fetchPaginationData(range, this.period)
+                        .then((results: RequestResults<T>) => {
+                            this.checkDataExhausted(results);
+                            switch (operation) {
+                                case TFChartDataRequestType.PREPEND:   
+                                    this.prependData(results.data, results.range);
+                                    break;
+                                case TFChartDataRequestType.APPEND:   
+                                    this.appendData(results.data, results.range);
+                                    break;
+                            }
+                        })
+                        .catch((err) => {
+                            this.dataExhausted |= TFChartDataRequestType.PREPEND | TFChartDataRequestType.APPEND;
+                            console.log(err + " for " + operation);
+                        })
+                        .then(() => {
+                            this.requestInProgress = false;
+                            this.processPendingRequestQueue();
+                        });
+            }
         }
     }
 
@@ -99,11 +153,17 @@ export class TFChartSimpleDataController<T> extends TFChartDataController {
     }
 
     public getCachedDataSize(): number {
+        if (this.dataRange == null) {
+            throw new Error("Arrrgh");
+        }
         return this.dataRange.span / this.period;
     }
 
     private setData(data: T[], range: TFChartRange) {
         this.data = data;
+        if (range == null) {
+            throw new Error("Range returned from DataSupplier cannot be null");
+        }
         this.dataRange = range;
     }
 
@@ -180,33 +240,37 @@ export class TFChartSimpleDataController<T> extends TFChartDataController {
     }
 
     private processPendingRequestQueue() {
-        var prependRange = null;
-        var appendRange = null;
-        for (let request of this.pending_request_queue) {
-            if (request[0] == TFChartDataRequestType.PREPEND) {
-                if (prependRange == null) {
-                    prependRange = request[1];
-                } else {
-                    prependRange = TFChartUnionRange(prependRange, request[1]);
+        if (this.requestBacklog.length == 0) {
+            return;
+        } else {
+            let resultingRange: TFChartRange;
+            if (this.requestBacklog.length >= 2) {
+                resultingRange = this.requestBacklog[0];
+                for (let r of this.requestBacklog) {
+                    resultingRange = TFChartUnionRange(resultingRange, r);
                 }
             } else {
-                if (appendRange == null) {
-                    appendRange = request[1];
-                } else {
-                    appendRange = TFChartUnionRange(appendRange, request[1]);
-                }
+                resultingRange = this.requestBacklog[0];                                    
             }
-        }
-        this.pending_request_queue = [];
 
-        prependRange = this.removeCurrentDataFromRange(prependRange);
-        appendRange = this.removeCurrentDataFromRange(appendRange);
+            // console.log("Processing backlog of " + this.requestBacklog.length + " requests: " + resultingRange);
 
-        if (prependRange != null && this.canSupplyData(TFChartDataRequestType.PREPEND)) {
-            this.requestData(prependRange, TFChartDataRequestType.PREPEND);
-        }
-        if (appendRange != null && this.canSupplyData(TFChartDataRequestType.APPEND)) {
-            this.requestData(appendRange, TFChartDataRequestType.APPEND);
+            let results: TFChartRange[] = [];
+            let overlap = TFChartIntersectionRange(resultingRange, this.dataRange);
+            if (overlap.span != 0) {
+                if (resultingRange.position < overlap.position) {
+                    results.push(TFChartRangeMake(resultingRange.position, resultingRange.position - overlap.position));
+                }
+
+                if (TFChartRangeMax(resultingRange) > TFChartRangeMax(overlap)) {
+                    results.push(TFChartRangeMake(TFChartRangeMax(overlap), TFChartRangeMax(resultingRange) - TFChartRangeMax(overlap)));
+                }
+            } else {
+                results.push(resultingRange);
+            }
+            for (let r of results) {
+                this.requestData(r);
+            }
         }
     }
 

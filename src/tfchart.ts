@@ -2,7 +2,7 @@ import { TFChartDateTimeRange, TFChartSize, TFChartRangeMax, TFChartRangeMake, T
 import { TFChartRenderer } from './renderers/tfchart_renderer'
 import { TFChartAnnotation } from './annotations/tfchart_annotation'
 import { TFChartSeries } from './series/tfchart_series'
-import { TFChartDataRequestType, TFChartDataController, DataOperation } from './tfchart_datacontroller'
+import { TFChartDataRequestType, TFChartDataController, DataOperation, TFChartDataAvailability } from './tfchart_datacontroller'
 import { TFChartContext } from './tfchart_context'
 
 export class TFChart extends TFChartContext {
@@ -33,7 +33,7 @@ export class TFChart extends TFChartContext {
         controller: null
     };
 
-    public constructor(chartContainer: any, private series: TFChartSeries, private period: number) {
+    public constructor(chartContainer: any, private series: TFChartSeries, private period: number, private observer: (range: TFChartRange) => any) {
         super(chartContainer);
         this.series.getDataController().subscribe((operation: DataOperation) => {
             if (this.visibleDataPoints == 0) {
@@ -48,10 +48,7 @@ export class TFChart extends TFChartContext {
         });
 
         this.series.setPeriod(this.period);
-        this.series.getDataController().requestInitialRange()
-            .then((initialRange) => {
-                this.series.getDataController().requestData(initialRange, TFChartDataRequestType.APPEND);
-            });
+        this.series.getDataController().requestInitialData();
 
         let ctx = this.getCrosshairContext();
         this.addEventListener("mousemove", (event) => {
@@ -122,14 +119,14 @@ export class TFChart extends TFChartContext {
 
     public setPeriod(period: number) {
         let currentRange: TFChartRange = this.getVisibleRange();
-        console.log("getting visible " + TFChartDateTimeRange(currentRange));
+        // console.log("getting visible " + TFChartDateTimeRange(currentRange));
         
         this.period = period;
         this.series.setPeriod(this.period);
         
-        this.series.getDataController().requestData(currentRange, TFChartDataRequestType.APPEND);
+        this.series.getDataController().requestInitialData();
 
-        console.log("setting visible " + TFChartDateTimeRange(currentRange));
+        // console.log("setting visible " + TFChartDateTimeRange(currentRange));
         this.setVisibleRange(currentRange);
     }
 
@@ -275,13 +272,16 @@ export class TFChart extends TFChartContext {
         let availableRange = this.series.getDataController().getCachedRange();
         let visibleRange = this.visibleDataRange(this.visibleOffset, this.visibleDataPoints);
 
-        if (this.visibleOffset > 0.0 && this.series.getDataController().canSupplyData(TFChartDataRequestType.PREPEND)) {
+        let range: TFChartRange = null;
+        if (this.visibleOffset > 0.0) {
             let startX = availableRange.position - this.x_axis.range.span;
-            let range =  new TFChartRange(startX, availableRange.position - startX - this.period);
-            this.series.getDataController().requestData(range, TFChartDataRequestType.PREPEND);
-        } else if (this.visibleDataPoints - this.visibleOffset > this.series.getDataController().getCachedDataSize() && this.series.getDataController().canSupplyData(TFChartDataRequestType.APPEND)) {
-            let range =  new TFChartRange(TFChartRangeMax(availableRange) + this.period, this.x_axis.range.span)
-            this.series.getDataController().requestData(range, TFChartDataRequestType.APPEND);
+            range =  new TFChartRange(startX, availableRange.position - startX - this.period);
+        } else if (this.visibleDataPoints - this.visibleOffset > this.series.getDataController().getCachedDataSize()) {
+            range =  new TFChartRange(TFChartRangeMax(availableRange) + this.period, this.x_axis.range.span)
+        }
+
+        if (range != null && this.series.getDataController().canSupplyData(range) == TFChartDataAvailability.AVAILABLE) {
+            this.series.getDataController().requestData(range);
         }
     }
 
@@ -297,9 +297,17 @@ export class TFChart extends TFChartContext {
         let area = this.drawableArea();
         let data_points = this.series.getDataController().getCachedDataSize();
         if (visibleOffset > 0.0) {
-            result = Math.min(visibleOffset, visibleDataPoints / 2.0);
+            if (data_points < visibleDataPoints && visibleOffset < (visibleDataPoints / 2.0)) {
+                result = Math.max(visibleOffset, (visibleDataPoints / 2.0) - data_points);
+            } else {
+                result = Math.min(visibleOffset, visibleDataPoints / 2.0);
+            }
         } else {
-            result = Math.max(visibleOffset, -(data_points - (visibleDataPoints / 2.0)));
+            if (data_points < visibleDataPoints) {
+                result = Math.max(visibleOffset, (visibleDataPoints / 2.0) - data_points);
+            } else {
+                result = Math.max(visibleOffset, -(Math.max(data_points, visibleDataPoints) - (visibleDataPoints / 2.0)));
+            }
         }
         return result;
     }
@@ -345,6 +353,7 @@ export class TFChart extends TFChartContext {
     private updateAxisRanges() {
         this.x_axis.range = this.visibleDataRange(this.visibleOffset, this.visibleDataPoints);
         this.y_axis.range = this.series.getVerticalRangeForHorizontal(this.x_axis.range);
+        this.observer(this.x_axis.range);
     }
 
     /**
@@ -470,6 +479,10 @@ export class TFChart extends TFChartContext {
             point.x = Math.round(point.x) + 0.5;
             point.y = Math.round(point.y) + 0.5;
 
+            let value = this.valueAtPixelLocation(point);
+            value.x = this.periodFloor(value.x + (this.period / 2.0));
+            point.x = this.pixelValueAtXValue(value.x);
+
             ctx.setLineDash([4, 2]);
             ctx.strokeStyle = this.options.theme.crosshairColor;
             ctx.beginPath();  
@@ -487,7 +500,7 @@ export class TFChart extends TFChartContext {
             ctx.font = "10px Arial";
 
             // draw the value pills at the bottom and right showing the value
-            let value = this.valueAtPixelLocation(point);
+            // let value = this.valueAtPixelLocation(point);
             ctx.fillStyle = this.options.theme.crosshairBackground;
 
             // right
@@ -510,7 +523,7 @@ export class TFChart extends TFChartContext {
 
             // bottom
             ctx.save();
-            let x_text = this.x_axis.formatter.format(this.periodFloor(value.x + (this.period / 2.0)), this.x_axis, true);
+            let x_text = this.x_axis.formatter.format(this.periodFloor(value.x), this.x_axis, true);
             text_size = ctx.measureText(x_text.text);
             let horizontalIndicatorSize = text_size.width + 10;
 

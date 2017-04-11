@@ -15,6 +15,12 @@ export enum TFChartDataOperationType {
     REMOVE = 2
 }
 
+export enum TFChartDataAvailability {
+    AVAILABLE = 1,
+    NOT_AVAILABLE = 2,
+    PARTIALLY_AVAILABLE = 3
+}
+
 export interface DataOperation {
     method: TFChartDataOperationType;
     count: number;
@@ -30,14 +36,14 @@ export abstract class TFChartDataController {
     public abstract setPeriod(period: number);
     public abstract subscribe(subscriber: DataSubscription);
     
-    public abstract requestInitialRange(): Promise<TFChartRange>;
-    public abstract requestData(range: TFChartRange, operation: TFChartDataRequestType);
+    public abstract requestInitialData();
+    public abstract requestData(range: TFChartRange);
     
     public abstract getCachedRange(): TFChartRange;
     public abstract getCachedDataSize(): number;
     public abstract getCachedData<T>(): T[];
 
-    public abstract canSupplyData(operation: TFChartDataRequestType): boolean;
+    public abstract canSupplyData(range: TFChartRange): TFChartDataAvailability;
     public hasData(): boolean {
         return this.getCachedDataSize() != 0;
     }

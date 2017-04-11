@@ -1,4 +1,4 @@
-import { Component, ViewChild, ElementRef, Input, AfterViewInit, OnChanges, SimpleChange } from '@angular/core';
+import { Component, ViewChild, ElementRef, Input, Output, AfterViewInit, OnChanges, SimpleChange, EventEmitter } from '@angular/core';
 import { TFChartSize, TFChartRangeMax, TFChartRange, TFChartRect, TFChartRectMake, TFChartPoint, TFChartPointMake } from './tfchart_utils'
 import { TFChartRenderer } from './renderers/tfchart_renderer'
 import { TFChartAnnotation } from './annotations/tfchart_annotation'
@@ -32,6 +32,7 @@ export class TFChartComponent implements AfterViewInit, OnChanges {
     @Input('period') period: number;
     @Input('series') series: TFChartSeries;
     @Input('enableDebug') enableDebug: boolean;
+    @Output('onRangeUpdate') onRangeUpdate: EventEmitter<TFChartRange> = new EventEmitter<TFChartRange>();
 
     @ViewChild("chartContainer") chartContainerRef: ElementRef;
 
@@ -39,7 +40,9 @@ export class TFChartComponent implements AfterViewInit, OnChanges {
 
     ngAfterViewInit() {
         console.log("Initialising chart [period: " + this.period + "]");
-        this.chart = new TFChart(this.chartContainerRef.nativeElement, this.series, this.period);
+        this.chart = new TFChart(this.chartContainerRef.nativeElement, this.series, this.period, (range) => {
+            this.onRangeUpdate.emit(range);
+        });
         this.chart.debug(this.enableDebug);
     }
 
