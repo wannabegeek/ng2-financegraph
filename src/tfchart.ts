@@ -130,6 +130,10 @@ export class TFChart extends TFChartContext {
         this.setVisibleRange(currentRange);
     }
 
+    public getPeriod(): number {
+        return this.period;
+    }
+
     public debug(value: boolean) {
         this.enableDebug = value;
     }
@@ -241,6 +245,10 @@ export class TFChart extends TFChartContext {
 
     public getVisibleRange(): TFChartRange {
         return this.visibleDataRange(this.visibleOffset, this.visibleDataPoints);
+    }
+
+    public getVisibleDataPoints(): TFChartRange {
+        return TFChartRangeMake(this.visibleOffset, this.visibleDataPoints);
     }
 
     public setVisibleRange(range: TFChartRange) {

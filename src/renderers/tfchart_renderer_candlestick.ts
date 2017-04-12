@@ -42,8 +42,8 @@ export class TFChartCandlestickRenderer extends TFChartRenderer {
             var ctx = chart.getDrawingContext();
             var x_start = chart.pixelValueAtXValue(data[0].timestamp);
             var x_end = chart.pixelValueAtXValue(data[data.length - 1].timestamp);
-            var x_delta = x_end - x_start;
-            var candle_width = (x_delta / data.length) / 1.5;
+            var x_delta = chart.getCanvasSize().width;
+            var candle_width = (x_delta / chart.getVisibleDataPoints().span) / 1.5;
             var half_candle_width = candle_width / 2.0;
 
             for (let point of data) {
