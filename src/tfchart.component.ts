@@ -30,9 +30,10 @@ export class Axis {
 })
 export class TFChartComponent implements AfterViewInit, OnChanges {
     @Input('period') period: number;
+    @Input('visibleRange') visibleRange: TFChartRange = null;
     @Input('series') series: TFChartSeries;
     @Input('enableDebug') enableDebug: boolean;
-    @Output('onRangeUpdate') onRangeUpdate: EventEmitter<TFChartRange> = new EventEmitter<TFChartRange>();
+    @Output() onRangeUpdate: EventEmitter<TFChartRange> = new EventEmitter<TFChartRange>();
 
     @ViewChild("chartContainer") chartContainerRef: ElementRef;
 
@@ -51,6 +52,9 @@ export class TFChartComponent implements AfterViewInit, OnChanges {
             if (this.chart) {
                 this.chart.setPeriod(this.period);
             }
+        }
+        if (changes.visibleRange && this.visibleRange != null) {
+            this.chart.setVisibleRange(this.visibleRange);
         }
     }
 }
