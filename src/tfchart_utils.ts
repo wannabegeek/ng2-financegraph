@@ -4,7 +4,9 @@ export function TFChartDateTimeRange(range: TFChartRange) {
     return start.toString() + " -> " + end.toString();
 }
 
-export class TFChartRange{    
+export class TFChartRange{ 
+
+    private static INVALID_RANGE = TFChartRangeMake(Number.MAX_SAFE_INTEGER, 0);   
 
     constructor(public position: number, public span: number) {
     }
@@ -24,6 +26,10 @@ export class TFChartRange{
     public toString(): string {
         return "{position: " + this.position + ", span: " + this.span + "}";
     }
+}
+
+export function TFChartRangeInvalid(): TFChartRange {
+    return this.INVALID_RANGE;
 }
 
 export function TFChartRangeMake(position: number, span: number): TFChartRange {

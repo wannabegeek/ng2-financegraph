@@ -17,8 +17,8 @@ export class TFChartBarchartSeries extends TFChartSeries {
     }
 
     public getVerticalRangeForHorizontal(horizontalRange: TFChartRange): TFChartRange {
-        let max = 0;
-        let data = this.dataController.getCachedData<TFChartBarchartDataType>();
+        let max: number = 0;
+        let data: TFChartBarchartDataType[] = this.dataController.getCachedData<TFChartBarchartDataType>();
         for (let point of data) {
             if (point.timestamp > TFChartRangeMax(horizontalRange)) {
                 break;

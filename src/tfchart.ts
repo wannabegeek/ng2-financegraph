@@ -1,4 +1,4 @@
-import { TFChartDateTimeRange, TFChartSize, TFChartRangeMax, TFChartRangeMake, TFChartRange, TFChartRect, TFChartRectMake, TFChartRectGetMaxY, TFChartPoint, TFChartPointMake } from './tfchart_utils'
+import { TFChartDateTimeRange, TFChartSize, TFChartIntersectionRange, TFChartRangeMax, TFChartRangeMake, TFChartRange, TFChartRect, TFChartRectMake, TFChartRectGetMaxY, TFChartPoint, TFChartPointMake } from './tfchart_utils'
 import { TFChartRenderer } from './renderers/tfchart_renderer'
 import { TFChartAnnotation } from './annotations/tfchart_annotation'
 import { TFChartSeries } from './series/tfchart_series'
@@ -48,7 +48,6 @@ export class TFChart extends TFChartContext {
         });
 
         this.series.setPeriod(this.period);
-        this.series.getDataController().requestInitialData();
 
         let ctx = this.getCrosshairContext();
         this.addEventListener("mousemove", (event) => {
@@ -124,8 +123,6 @@ export class TFChart extends TFChartContext {
         this.period = period;
         this.series.setPeriod(this.period);
         
-        this.series.getDataController().requestInitialData();
-
         // console.log("setting visible " + TFChartDateTimeRange(currentRange));
         this.setVisibleRange(currentRange);
     }
@@ -257,7 +254,7 @@ export class TFChart extends TFChartContext {
     
         this.visibleDataPoints = range.span / this.period;
         this.visibleOffset = (availableRange.position - range.position) / this.period;
-        console.log("Set visible range: " + range.span + " for period " + this.period + " visible: " + this.visibleDataPoints);
+        console.log("Set visible range: " + range + " for period " + this.period + " visible: " + this.visibleDataPoints);
 
         this.updateAxisRanges();
         this.redraw();
@@ -288,7 +285,7 @@ export class TFChart extends TFChartContext {
             range =  new TFChartRange(TFChartRangeMax(availableRange) + this.period, this.x_axis.range.span)
         }
 
-        if (range != null && this.series.getDataController().canSupplyData(range) == TFChartDataAvailability.AVAILABLE) {
+        if (range != null && TFChartIntersectionRange(this.series.getDataController().availableRange(), range).span > 0) {
             this.series.getDataController().requestData(range);
         }
     }

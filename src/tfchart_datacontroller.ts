@@ -9,7 +9,6 @@ export interface NumberFunction<T> {
     (t: T): number;
 }
 
-
 export enum TFChartDataOperationType {
     ADD = 1,
     REMOVE = 2
@@ -36,14 +35,14 @@ export abstract class TFChartDataController {
     public abstract setPeriod(period: number);
     public abstract subscribe(subscriber: DataSubscription);
     
-    public abstract requestInitialData();
+    public abstract availableRange(): TFChartRange;
     public abstract requestData(range: TFChartRange);
     
     public abstract getCachedRange(): TFChartRange;
     public abstract getCachedDataSize(): number;
     public abstract getCachedData<T>(): T[];
 
-    public abstract canSupplyData(range: TFChartRange): TFChartDataAvailability;
+    // public abstract canSupplyData(range: TFChartRange): TFChartDataAvailability;
     public hasData(): boolean {
         return this.getCachedDataSize() != 0;
     }

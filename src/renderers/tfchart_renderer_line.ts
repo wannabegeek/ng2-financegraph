@@ -21,7 +21,7 @@ export class TFChartLineChartRenderer extends TFChartRenderer {
     //     this.theme = $.extend({}, default_theme, options.theme.candlestick || {});
     // }
 
-    public render(data: TFChartLineDataType[], visibleRange: TFChartRange, chart: TFChart) {
+    public render(data: TFChartLineDataType[], visibleRange: TFChartRange, chart: TFChart): void {
         var ctx = chart.getDrawingContext();
 
         if (data.length > 0) {

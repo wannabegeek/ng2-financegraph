@@ -37,21 +37,18 @@ export class TFChartCandlestickRenderer extends TFChartRenderer {
     //     super();
     // }
 
-    public render(data: TFChartCandlestickDataType[], visibleRange: TFChartRange, chart: TFChart) {
+    public render(data: TFChartCandlestickDataType[], visibleRange: TFChartRange, chart: TFChart): void {
         if (data.length > 0) {
             var ctx = chart.getDrawingContext();
-            var x_start = chart.pixelValueAtXValue(data[0].timestamp);
-            var x_end = chart.pixelValueAtXValue(data[data.length - 1].timestamp);
-            var x_delta = chart.getCanvasSize().width;
-            var candle_width = (x_delta / chart.getVisibleDataPoints().span) / 1.5;
-            var half_candle_width = candle_width / 2.0;
+            var candle_width: number = (chart.getCanvasSize().width / chart.getVisibleDataPoints().span) / 1.5;
+            var half_candle_width: number = candle_width / 2.0;
 
             for (let point of data) {
                 if (visibleRange.intersects(point.timestamp)) {
-                    var body_top = Math.round(chart.pixelValueAtYValue(Math.max(point.open, point.close))) + 0.5;
-                    var body_bottom = Math.round(chart.pixelValueAtYValue(Math.min(point.open, point.close))) + 0.5;
+                    var body_top: number = Math.round(chart.pixelValueAtYValue(Math.max(point.open, point.close))) + 0.5;
+                    var body_bottom: number = Math.round(chart.pixelValueAtYValue(Math.min(point.open, point.close))) + 0.5;
 
-                    var offset = chart.pixelValueAtXValue(point.timestamp);
+                    var offset: number = chart.pixelValueAtXValue(point.timestamp);
                     if (offset > -half_candle_width) {
                         ctx.beginPath();
                         ctx.rect(Math.round(offset - half_candle_width) + 0.5,
@@ -62,7 +59,7 @@ export class TFChartCandlestickRenderer extends TFChartRenderer {
 
                         ctx.strokeStyle = this.theme.wickColor;
                         ctx.beginPath();
-                        var wick_location = Math.round(offset) + 0.5;
+                        var wick_location: number = Math.round(offset) + 0.5;
                         ctx.moveTo(wick_location, chart.pixelValueAtYValue(point.high));
                         ctx.lineTo(wick_location, body_top);
                         ctx.moveTo(wick_location, body_bottom);
@@ -74,7 +71,7 @@ export class TFChartCandlestickRenderer extends TFChartRenderer {
         }
     }
 
-    private fillCandle(ctx, isUp: boolean) {
+    private fillCandle(ctx: any, isUp: boolean) {
         if (isUp) {
             ctx.fillStyle = this.theme.upFillColor;
             ctx.strokeStyle = this.theme.upStrokeColor;

@@ -5,10 +5,12 @@ module.exports = function(config) {
     config.set({
         frameworks: ["jasmine", "karma-typescript"],
         files: [
-            { pattern: "src/**/*.ts" }, // *.tsx for React Jsx 
+            { pattern: "src/**/*.ts" },
+            // { pattern: "test/**/*.ts" }
         ],
         preprocessors: {
-            "**/*.ts": ["karma-typescript"], // *.tsx for React Jsx 
+            "src/**/*.ts": ["karma-typescript"],
+            // "test/**/*.ts": ["karma-typescript"]
         },
         reporters: ["progress", "karma-typescript"],
         browsers: ["Chrome"]

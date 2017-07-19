@@ -21,9 +21,9 @@ export class TFChartCandlestickSeries extends TFChartSeries {
     }
 
     public getVerticalRangeForHorizontal(horizontalRange: TFChartRange): TFChartRange {
-        let min = null;
-        let max = null;
-        let data = this.dataController.getCachedData<TFChartCandlestickDataType>();
+        let min: number = null;
+        let max: number = null;
+        let data: TFChartCandlestickDataType[] = this.dataController.getCachedData<TFChartCandlestickDataType>();
         for (let point of data) {
             if (point.timestamp > TFChartRangeMax(horizontalRange)) {
                 break;

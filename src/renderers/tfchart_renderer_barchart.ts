@@ -1,6 +1,6 @@
 import { TFChartRenderer } from './tfchart_renderer'
 import { TFChart } from '../tfchart'
-import { TFChartRange } from '../tfchart_utils'
+import { TFChartRange, TFChartRect } from '../tfchart_utils'
 import { TFChartBarchartDataType } from '../series/tfchart_series_barchart'
 
 export class TFChartBarChartRenderer extends TFChartRenderer {
@@ -22,23 +22,23 @@ export class TFChartBarChartRenderer extends TFChartRenderer {
     //     this.theme = $.extend({}, default_theme, options.theme.candlestick || {});
     // }
 
-    public render(data: TFChartBarchartDataType[], visibleRange: TFChartRange, chart: TFChart) {
+    public render<TFChartBarchartDataType>(data: TFChartBarchartDataType[], visibleRange: TFChartRange, chart: TFChart): void {
         if (data.length > 0) {
             var ctx = chart.getDrawingContext();
-            var x_start = chart.pixelValueAtXValue(data[0].timestamp);
-            var x_end = chart.pixelValueAtXValue(data[data.length - 1].timestamp);
-            var x_delta = x_end - x_start;
-            var bar_width = (x_delta / data.length) / 1.5;
-            var half_bar_width = bar_width / 2.0;
+            var x_start: number = chart.pixelValueAtXValue(data[0].timestamp);
+            var x_end: number = chart.pixelValueAtXValue(data[data.length - 1].timestamp);
+            var x_delta: number = x_end - x_start;
+            var bar_width: number = (x_delta / data.length) / 1.5;
+            var half_bar_width: number = bar_width / 2.0;
 
             ctx.fillStyle = this.theme.barFillColor;
             ctx.strokeStyle = this.theme.barStrokeColor;
 
             for (let point of data) {
                 if (visibleRange.intersects(point.timestamp)) {
-                    var plot = chart.plotArea();
-                    var body_top = Math.round(chart.pixelValueAtYValue(point.value)) + 0.5;
-                    var offset = chart.pixelValueAtXValue(point.timestamp);
+                    var plot: TFChartRect = chart.plotArea();
+                    var body_top: number = Math.round(chart.pixelValueAtYValue(point.value)) + 0.5;
+                    var offset: number = chart.pixelValueAtXValue(point.timestamp);
 
                     if (offset > -half_bar_width) {
                         ctx.beginPath();
