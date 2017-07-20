@@ -2,9 +2,10 @@ import { TFChartRange, TFChartRangeMake, TFChartIntersectionRange, TFChartEqualR
 import { TFChartDataController, TFChartDataRequestType, TFChartDataAvailability, DataSubscription, TFChartDataOperationType, DataOperation } from '../tfchart_datacontroller'
 import { TFChartDataSupplier, RequestResults } from '../tfchart_datasupplier'
 import { TFChartDataBuffer } from './tfchart_databuffer'
+import { TFChartDataType } from '../series/tfchart_series'
 import { Subject } from 'rxjs/Subject'
 
-export class TFChartSimpleDataController<T> extends TFChartDataController {
+export class TFChartSimpleDataController<T extends TFChartDataType> extends TFChartDataController {
     private period: number = -1;
     private data: TFChartDataBuffer<T> = new TFChartDataBuffer<T>();
     private pending_request_queue = [];
@@ -100,29 +101,32 @@ export class TFChartSimpleDataController<T> extends TFChartDataController {
 
     public requestData(range: TFChartRange) {
         if (this.requestInProgress) {
-            // console.log("Request already in grogress - queuing");
+            // console.log("Request already in progress - queuing");
             this.requestBacklog.push(range);
         } else {
-            // console.log("think we want: " + range + " currently have " + this.dataRange + " for period: " + this.period);
+            // console.log("think we want: " + range + " currently have " + this.data.getRange() + " for period: " + this.period);
             // we don't want any gaps in our cached data...
             range = TFChartIntersectionRange(range, this.availableDataRange);
+            if (range.span == 0) {
+                throw new Error("Request out of available range [we have " + this.availableDataRange + " but requested " + range + "]");
+            }
             let operation: TFChartDataRequestType;
-            if (!TFChartEqualRanges(this.data.getRange(), TFChartRangeInvalid())) {
+            if (this.data.getRange() !== TFChartRangeInvalid()) {
                 if (range.position < this.data.getRange().position) {
                     operation = TFChartDataRequestType.PREPEND;
                     range = TFChartUnionRange(range, this.data.getRange());
                     range.span -= this.data.getRange().span;
                 } else if (TFChartRangeMax(range) > TFChartRangeMax(this.data.getRange())) {
                     operation = TFChartDataRequestType.APPEND;
-                    let currentEnd = TFChartRangeMax(this.data.getRange()) + this.period;
+                    let currentEnd = TFChartRangeMax(this.data.getRange());
                     range = TFChartRangeMake(currentEnd, TFChartRangeMax(range) - currentEnd);
                 } else {
+                    console.log("We already have the requested data");
                     throw new Error("invalid data request " + range);
                 }
             } else {
                 operation = TFChartDataRequestType.APPEND;
             }
-
             if (range.span > 0) {
                 this.requestInProgress = true;
                 this.dataSupplier.fetchPaginationData(range, this.period)
@@ -131,7 +135,7 @@ export class TFChartSimpleDataController<T> extends TFChartDataController {
                                 console.log("Failure returned from fetchPaginationData in dataSupplier");
                             } else {
                                 switch (operation) {
-                                    case TFChartDataRequestType.PREPEND:   
+                                    case TFChartDataRequestType.PREPEND: 
                                         this.prependData(results.data, results.range);
                                         break;
                                     case TFChartDataRequestType.APPEND:   
@@ -168,7 +172,7 @@ export class TFChartSimpleDataController<T> extends TFChartDataController {
 
     private prependData(data: T[], range: TFChartRange): void {
 
-        this.data.appendData(data, range);
+        this.data.prependData(data, range);
 
         this.observers.next({
             method: TFChartDataOperationType.ADD,
@@ -226,8 +230,8 @@ export class TFChartSimpleDataController<T> extends TFChartDataController {
                 resultingRange = this.requestBacklog[0];                                    
             }
 
-            this.requestBacklog = [];
             // console.log("Processing backlog of " + this.requestBacklog.length + " requests: " + resultingRange);
+            this.requestBacklog = [];
 
             let results: TFChartRange[] = [];
             let overlap = TFChartIntersectionRange(resultingRange, this.data.getRange());

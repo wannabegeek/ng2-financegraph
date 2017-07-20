@@ -22,14 +22,14 @@ export class TFChartBarChartRenderer extends TFChartRenderer {
     //     this.theme = $.extend({}, default_theme, options.theme.candlestick || {});
     // }
 
-    public render<TFChartBarchartDataType>(data: TFChartBarchartDataType[], visibleRange: TFChartRange, chart: TFChart): void {
+    public render(data: TFChartBarchartDataType[], visibleRange: TFChartRange, chart: TFChart): void {
         if (data.length > 0) {
-            var ctx = chart.getDrawingContext();
-            var x_start: number = chart.pixelValueAtXValue(data[0].timestamp);
-            var x_end: number = chart.pixelValueAtXValue(data[data.length - 1].timestamp);
-            var x_delta: number = x_end - x_start;
-            var bar_width: number = (x_delta / data.length) / 1.5;
-            var half_bar_width: number = bar_width / 2.0;
+            let ctx = chart.getDrawingContext();
+            let x_start: number = chart.pixelValueAtXValue(data[0].timestamp);
+            let x_end: number = chart.pixelValueAtXValue(data[data.length - 1].timestamp);
+            let x_delta: number = x_end - x_start;
+            let bar_width: number = (x_delta / data.length) / 1.5;
+            let half_bar_width: number = bar_width / 2.0;
 
             ctx.fillStyle = this.theme.barFillColor;
             ctx.strokeStyle = this.theme.barStrokeColor;

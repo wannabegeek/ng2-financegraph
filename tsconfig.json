@@ -3,7 +3,7 @@
     "emitDecoratorMetadata": true,
     "experimentalDecorators": true,
     "target": "es5",
-    "lib": ["es6", "es2015", "dom"],
+    "lib": ["es6", "es2017", "dom"],
     "module": "commonjs",
     "moduleResolution": "node",
     "removeComments": true,
@@ -19,8 +19,8 @@
   "exclude": [
     "example",
     "node_modules",
-    "dist",
-    "**/*.spec.ts"
+    "dist"
+    // "**/*.spec.ts"
   ],
   "angularCompilerOptions": {
     "genDir": "./dist",

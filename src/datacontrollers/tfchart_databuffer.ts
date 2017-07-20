@@ -51,7 +51,7 @@ export class TFChartDataBuffer<T> {
             let completeRange: TFChartRange = null;
             
             let intersectionSize: number = 0;
-            intersectionSize = TFChartRangeMax(TFChartIntersectionRange(this.range, range));
+            intersectionSize = TFChartIntersectionRange(this.range, range).span;
             range.position += intersectionSize;
             range.span -= intersectionSize;
             completeRange = TFChartUnionRange(this.range, range);
@@ -60,7 +60,7 @@ export class TFChartDataBuffer<T> {
                 data = data.slice(intersectionSize, data.length - intersectionSize);
             }
 
-            this.data = data.concat(this.data);
+            this.data = this.data.concat(data);
             this.range = completeRange; //TFChartUnionRange(this.range, range);
         }
     }

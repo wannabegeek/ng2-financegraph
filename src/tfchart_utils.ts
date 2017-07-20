@@ -4,9 +4,7 @@ export function TFChartDateTimeRange(range: TFChartRange) {
     return start.toString() + " -> " + end.toString();
 }
 
-export class TFChartRange{ 
-
-    private static INVALID_RANGE = TFChartRangeMake(Number.MAX_SAFE_INTEGER, 0);   
+export class TFChartRange { 
 
     constructor(public position: number, public span: number) {
     }
@@ -26,10 +24,12 @@ export class TFChartRange{
     public toString(): string {
         return "{position: " + this.position + ", span: " + this.span + "}";
     }
+
 }
 
+let INVALID_RANGE: TFChartRange = TFChartRangeMake(Number.MAX_SAFE_INTEGER, 0);   
 export function TFChartRangeInvalid(): TFChartRange {
-    return this.INVALID_RANGE;
+    return INVALID_RANGE;
 }
 
 export function TFChartRangeMake(position: number, span: number): TFChartRange {
@@ -106,12 +106,13 @@ export class TFChartRect {
     }
 
     public containsPoint(point: TFChartPoint): boolean {
-        return point.x <= this.origin.x && point.x >= (this.origin.x + this.size.width) &&
-            point.y <= this.origin.y && point.y >= (this.origin.y + this.size.height);
+        return point.x >= this.origin.x && point.x <= (this.origin.x + this.size.width) &&
+            point.y >= this.origin.y && point.y <= (this.origin.y + this.size.height);
     }
 
     public intersectsRect(rect: TFChartRect): boolean {
-        return (this.origin.x + this.size.width >= rect.origin.x && this.origin.x <= rect.origin.x + rect.size.width && this.origin.y + this.size.height >= rect.origin.y && this.origin.y <= rect.origin.y + rect.size.height);
+        return (this.origin.x + this.size.width >= rect.origin.x && this.origin.x <= rect.origin.x + rect.size.width 
+                && this.origin.y + this.size.height >= rect.origin.y && this.origin.y <= rect.origin.y + rect.size.height);
     }
 }
 

@@ -3,6 +3,10 @@ import { TFChartDataController } from '../tfchart_datacontroller'
 import { TFChartRange, TFChartRangeMax } from '../tfchart_utils'
 import { TFChart } from '../tfchart'
 
+export interface TFChartDataType {
+    timestamp: number;
+}
+
 export abstract class TFChartSeries {
     
     constructor(protected renderer: TFChartRenderer, protected dataController: TFChartDataController) {

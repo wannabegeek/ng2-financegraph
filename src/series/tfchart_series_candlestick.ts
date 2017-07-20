@@ -1,12 +1,11 @@
-import { TFChartSeries } from './tfchart_series'
+import { TFChartSeries, TFChartDataType } from './tfchart_series'
 import { TFChartRenderer } from '../renderers/tfchart_renderer'
 import { TFChartCandlestickRenderer } from '../renderers/tfchart_renderer_candlestick'
 import { TFChartDataSupplier } from '../tfchart_datasupplier'
 import { TFChartSimpleDataController } from '../datacontrollers/tfchart_datacontroler_simple'
 import { TFChartRange, TFChartRangeMax } from '../tfchart_utils'
 
-export interface TFChartCandlestickDataType {
-    timestamp: number;
+export interface TFChartCandlestickDataType extends TFChartDataType {
     open: number;
     high: number;
     low: number;
@@ -23,7 +22,7 @@ export class TFChartCandlestickSeries extends TFChartSeries {
     public getVerticalRangeForHorizontal(horizontalRange: TFChartRange): TFChartRange {
         let min: number = null;
         let max: number = null;
-        let data: TFChartCandlestickDataType[] = this.dataController.getCachedData<TFChartCandlestickDataType>();
+        let data: TFChartCandlestickDataType[] = <TFChartCandlestickDataType []>this.dataController.getCachedData();
         for (let point of data) {
             if (point.timestamp > TFChartRangeMax(horizontalRange)) {
                 break;

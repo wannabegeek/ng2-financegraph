@@ -1,4 +1,5 @@
 import { TFChartRange, TFChartIntersectionRange, TFChartEqualRanges, TFChartRangeMax, TFChartUnionRange } from './tfchart_utils'
+import { TFChartDataType } from './series/tfchart_series'
 
 export enum TFChartDataRequestType {
     PREPEND = 1,
@@ -40,7 +41,7 @@ export abstract class TFChartDataController {
     
     public abstract getCachedRange(): TFChartRange;
     public abstract getCachedDataSize(): number;
-    public abstract getCachedData<T>(): T[];
+    public abstract getCachedData<T extends TFChartDataType>(): T[];
 
     // public abstract canSupplyData(range: TFChartRange): TFChartDataAvailability;
     public hasData(): boolean {
