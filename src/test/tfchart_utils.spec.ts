@@ -7,8 +7,9 @@ import { TFChartRangeInvalid,
     TFChartIntersectionRange,
     TFChartRect,
     TFChartRectMake,
-    TFChartPointMake 
-} from './tfchart_utils'
+    TFChartPointMake,
+    TFChartRectInset 
+} from '../tfchart_utils'
 
 describe("TFChartRange", () => {
     it("Equal ranges", () => {
@@ -85,4 +86,13 @@ describe("TFChartRect", () => {
         expect(rect1.intersectsRect(rect3)).toBe(false);
     });
 
+    it("Inset Rect", () => {
+        let rect: TFChartRect = TFChartRectMake(0, 0, 100, 100);
+
+        let result: TFChartRect = TFChartRectInset(rect, 2, 10);
+        expect(result.origin.x).toBe(2);
+        expect(result.origin.y).toBe(10);
+        expect(result.size.width).toBe(96);
+        expect(result.size.height).toBe(80);
+    });
 });

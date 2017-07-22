@@ -1,4 +1,16 @@
-import { TFChartDateTimeRange, TFChartSize, TFChartIntersectionRange, TFChartRangeMax, TFChartRangeMake, TFChartRange, TFChartRect, TFChartRectMake, TFChartRectGetMaxY, TFChartPoint, TFChartPointMake } from './tfchart_utils'
+import { TFChartDateTimeRange,
+            TFChartSize,
+            TFChartIntersectionRange,
+            TFChartRangeMax,
+            TFChartRangeMake,
+            TFChartRange,
+            TFChartRect,
+            TFChartRectMake,
+            TFChartRectGetMaxY,
+            TFChartPoint,
+            TFChartPointMake,
+            TFChartRectInset
+        } from './tfchart_utils'
 import { TFChartRenderer } from './renderers/tfchart_renderer'
 import { TFChartAnnotation } from './annotations/tfchart_annotation'
 import { TFChartSeries } from './series/tfchart_series'
@@ -33,11 +45,11 @@ export class TFChart extends TFChartContext {
         controller: null
     };
 
-    public constructor(chartContainer: any, private series: TFChartSeries, private period: number, private observer: (range: TFChartRange) => any) {
+    public constructor(chartContainer: HTMLDivElement, private series: TFChartSeries, private period: number, private observer: (range: TFChartRange) => any) {
         super(chartContainer);
         this.series.getDataController().subscribe((operation: DataOperation) => {
             if (this.visibleDataPoints == 0) {
-                this.visibleDataPoints = this.series.getDataController().getCachedDataSize();
+                this.visibleDataPoints = this.series.getDataController().getCachedRange().span / period;
             };
 
             if (operation.type == TFChartDataRequestType.PREPEND) {
@@ -237,7 +249,7 @@ export class TFChart extends TFChartContext {
     public log() {
         let area = this.plotArea();
         console.log("Canvas Size" + this.getCanvasSize());
-        console.log("Plot Area" + area.origin.x + " x " + area.origin.y + " --> " + area.size.width + ", " + area.size.height);
+        console.log("Plot Area " + area.origin.x + " x " + area.origin.y + " --> " + area.size.width + ", " + area.size.height);
     }
 
     public getVisibleRange(): TFChartRange {
@@ -280,9 +292,9 @@ export class TFChart extends TFChartContext {
         let range: TFChartRange = null;
         if (this.visibleOffset > 0.0) {
             let startX = availableRange.position - this.x_axis.range.span;
-            range =  new TFChartRange(startX, availableRange.position - startX - this.period);
-        } else if (this.visibleDataPoints - this.visibleOffset > this.series.getDataController().getCachedDataSize()) {
-            range =  new TFChartRange(TFChartRangeMax(availableRange) + this.period, this.x_axis.range.span)
+            range =  new TFChartRange(startX, availableRange.position - startX);
+        } else if (this.visibleDataPoints - this.visibleOffset > (this.series.getDataController().getCachedRange().span / this.period)) {
+            range =  new TFChartRange(TFChartRangeMax(availableRange), this.x_axis.range.span)
         }
 
         if (range != null && TFChartIntersectionRange(this.series.getDataController().availableRange(), range).span > 0) {
@@ -300,7 +312,7 @@ export class TFChart extends TFChartContext {
     private checkViewableOffsetLimits(visibleDataPoints: number, visibleOffset: number): number {
         let result: number;
         let area = this.drawableArea();
-        let data_points = this.series.getDataController().getCachedDataSize();
+        let data_points = this.series.getDataController().getCachedRange().span / this.period;
         if (visibleOffset > 0.0) {
             if (data_points < visibleDataPoints && visibleOffset < (visibleDataPoints / 2.0)) {
                 result = Math.max(visibleOffset, (visibleDataPoints / 2.0) - data_points);
@@ -556,13 +568,9 @@ export class TFChart extends TFChartContext {
         ctx.fillStyle = this.options.theme.axisColor;
         ctx.fillText("Offset: " + this.visibleOffset, 15, 15);
         ctx.fillText("Span: " + this.visibleDataPoints, 15, 28);
-        ctx.fillText("Data Points: " + this.series.getDataController().getCachedDataSize(), 15, 41);
+        ctx.fillText("Data Points: " + this.series.getDataController().getCachedRange().span / this.period, 15, 41);
         ctx.fillText("Visible Points: " + this.visibleDataPoints, 15, 54);
         ctx.fillText("Visible Points: " + TFChartDateTimeRange(this.getVisibleRange()), 15, 67);
         // ctx.restore();
-
     }
-    // private onResize() {
-    //     this.reflow();
-    // }
 }

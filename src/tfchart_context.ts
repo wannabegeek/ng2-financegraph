@@ -1,4 +1,4 @@
-import { TFChartSize, TFChartSizeMake, TFChartRangeMax, TFChartRange, TFChartRect, TFChartRectMake, TFChartPoint, TFChartPointMake } from './tfchart_utils';
+import { TFChartSize, TFChartSizeMake, TFChartRangeMax, TFChartRange, TFChartRect, TFChartRectMake, TFChartPoint, TFChartPointMake, TFChartRectInset } from './tfchart_utils';
 import { Axis } from './axis_formatters/tfchart_axis_formatter';
 import { DateTimeAxisFormatter } from './axis_formatters/tfchart_datetimeaxis_formatter';
 import { LinearAxisFormatter } from './axis_formatters/tfchart_linearaxis_formatter';
@@ -12,11 +12,11 @@ export interface MouseHandler {
 }
 
 export abstract class TFChartContext {
-    private chartCanvas: any;
-    private crosshairCanvas: any;
+    private chartCanvas: HTMLCanvasElement;
+    private crosshairCanvas: HTMLCanvasElement;
 
-    private context: any;
-    private axis_context: any;
+    private context: CanvasRenderingContext2D;
+    private axis_context: CanvasRenderingContext2D;
 
     private drawable_area: TFChartRect = null;
     private plot_area: TFChartRect = null;
@@ -24,8 +24,8 @@ export abstract class TFChartContext {
     protected x_axis: Axis = new Axis(new DateTimeAxisFormatter(), 70.0, 0.0);
     protected y_axis: Axis = new Axis(new LinearAxisFormatter(4), 30.0, 20.0);
 
-    public constructor(private chartContainer: any) {
-        this.chartCanvas = document.createElement('canvas');
+    public constructor(private chartContainer: HTMLDivElement) {
+        this.chartCanvas = <HTMLCanvasElement>document.createElement('canvas');
         this.chartCanvas.id = 'chartCanvas';
         this.chartCanvas.style.position = 'absolute';
         this.chartCanvas.style.left = '0';
@@ -34,7 +34,7 @@ export abstract class TFChartContext {
         this.chartCanvas.style.height = '100%';
         chartContainer.appendChild(this.chartCanvas);
 
-        this.crosshairCanvas = document.createElement('canvas');
+        this.crosshairCanvas = <HTMLCanvasElement>document.createElement('canvas');
         this.crosshairCanvas.id = 'crosshairCanvas';
         this.crosshairCanvas.style.position = 'absolute';
         this.crosshairCanvas.style.left = '0';
@@ -49,26 +49,26 @@ export abstract class TFChartContext {
 
         let self = this;
         elementResizeEvent(chartContainer, function() {
-            self.setCanvasSize(TFChartSizeMake(chartContainer.offsetWidth, chartContainer.offsetHeight));
+            self.setCanvasSizeAndReflow(TFChartSizeMake(chartContainer.offsetWidth, chartContainer.offsetHeight));
         });
 
-        // this.setCanvasSize(TFChartSizeMake(chartContainer.offsetWidth, chartContainer.offsetHeight));
-        this.chartCanvas.width = chartContainer.offsetWidth;
-        this.chartCanvas.height = chartContainer.offsetHeight;
-        this.crosshairCanvas.width = chartContainer.offsetWidth;
-        this.crosshairCanvas.height = chartContainer.offsetHeight;
+        this.setCanvasSize(TFChartSizeMake(chartContainer.offsetWidth, chartContainer.offsetHeight));
     }
 
-    protected setCanvasSize(size: TFChartSize) {
+    protected setCanvasSizeAndReflow(size: TFChartSize) {
+        this.setCanvasSize(size);
+        this.reflow();
+    }
+
+    private setCanvasSize(size: TFChartSize) {
         this.chartCanvas.width = size.width;
         this.chartCanvas.height = size.height;
         this.crosshairCanvas.width = size.width;
         this.crosshairCanvas.height = size.height;
-        this.reflow();
     }
 
     public addEventListener(eventType: string, handler: MouseHandler) {
-        this.crosshairCanvas.addEventListener(eventType, handler, this);    
+        this.crosshairCanvas.addEventListener(eventType, handler, true);    
     }
 
     public translateMouseEvent(event: MouseEvent): TFChartPoint {
@@ -99,11 +99,11 @@ export abstract class TFChartContext {
         this.axis_context.clearRect(0.0, 0.0, width, height);
     }
 
-    public getDrawingContext(): any {
+    public getDrawingContext(): CanvasRenderingContext2D {
         return this.context;
     }
 
-    public getCrosshairContext(): any {
+    public getCrosshairContext(): CanvasRenderingContext2D {
         return this.axis_context;
     }
 
@@ -112,10 +112,14 @@ export abstract class TFChartContext {
     }
 
     public drawableArea(): TFChartRect {
-        if (this.drawable_area == null) {
-            let width = Math.round(this.chartCanvas.width - this.x_axis.padding) + 0.5 - (this.x_axis.data_padding * 2);
-            let height = Math.round(this.chartCanvas.height - this.y_axis.padding) + 0.5 - (this.y_axis.data_padding * 2);
-            this.drawable_area = TFChartRectMake(this.x_axis.data_padding, this.y_axis.data_padding, width, height);
+        if (this.drawable_area == null) {            
+            this.drawable_area = TFChartRectInset(TFChartRectMake(
+                                                    0, 
+                                                    0, 
+                                                    this.chartCanvas.width, 
+                                                    this.chartCanvas.height), 
+                                                this.x_axis.padding, 
+                                                this.y_axis.padding);
         }
 
         return this.drawable_area;

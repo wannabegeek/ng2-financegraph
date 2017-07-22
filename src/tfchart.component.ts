@@ -1,5 +1,5 @@
 import { Component, ViewChild, ElementRef, Input, Output, AfterViewInit, OnChanges, SimpleChange, EventEmitter } from '@angular/core';
-import { TFChartSize, TFChartRangeMax, TFChartRange, TFChartRect, TFChartRectMake, TFChartPoint, TFChartPointMake } from './tfchart_utils'
+import { TFChartSize, TFChartRangeMax, TFChartRange, TFChartRect, TFChartRectMake, TFChartPoint, TFChartPointMake, TFChartRangeInvalid } from './tfchart_utils'
 import { TFChartRenderer } from './renderers/tfchart_renderer'
 import { TFChartAnnotation } from './annotations/tfchart_annotation'
 import { TFChartAxisFormatter } from './axis_formatters/tfchart_axis_formatter'

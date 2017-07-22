@@ -1,4 +1,4 @@
-import { TFChartRange, TFChartIntersectionRange, TFChartEqualRanges, TFChartRangeMax, TFChartUnionRange } from './tfchart_utils'
+import { TFChartRange, TFChartIntersectionRange, TFChartEqualRanges, TFChartRangeMax, TFChartUnionRange, TFChartRangeInvalid } from './tfchart_utils'
 import { TFChartDataType } from './series/tfchart_series'
 
 export enum TFChartDataRequestType {
@@ -40,11 +40,10 @@ export abstract class TFChartDataController {
     public abstract requestData(range: TFChartRange);
     
     public abstract getCachedRange(): TFChartRange;
-    public abstract getCachedDataSize(): number;
     public abstract getCachedData<T extends TFChartDataType>(): T[];
 
     // public abstract canSupplyData(range: TFChartRange): TFChartDataAvailability;
     public hasData(): boolean {
-        return this.getCachedDataSize() != 0;
+        return this.getCachedRange() != TFChartRangeInvalid();
     }
 }

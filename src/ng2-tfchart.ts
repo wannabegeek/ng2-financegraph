@@ -33,6 +33,7 @@ export {
             TFChartRangeMax,
             TFChartRangeMake,
             TFChartRange,
+            TFChartRangeInvalid,
             TFChartLocationInRange,
             TFChartEqualRanges,
             TFChartIntersectionRange,

@@ -13,8 +13,8 @@ module.exports = function(config) {
             // { pattern: "test/**/*.ts" }
         ],
         preprocessors: {
-            "src/**/*.ts": ["karma-typescript"],
-            // "test/**/*.ts": ["karma-typescript"]
+            "src/**/*.ts": ["karma-typescript"]
+            // "src/test/**/*.ts": ["karma-typescript"]
         },
         reporters: ["mocha"],
         browsers: ['PhantomJS'],

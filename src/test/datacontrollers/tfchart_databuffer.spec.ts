@@ -1,5 +1,5 @@
-import { TFChartDataBuffer } from './tfchart_databuffer'
-import { TFChartRangeInvalid, TFChartRange, TFChartRangeMake, TFChartEqualRanges } from '../tfchart_utils'
+import { TFChartDataBuffer } from '../../datacontrollers/tfchart_databuffer'
+import { TFChartRangeInvalid, TFChartRange, TFChartRangeMake, TFChartEqualRanges } from '../../tfchart_utils'
 
 describe("TFChartDataBuffer", () => {
 

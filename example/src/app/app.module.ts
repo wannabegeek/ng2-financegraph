@@ -5,7 +5,7 @@ import { HttpModule } from '@angular/http';
 
 import { AppComponent } from './app.component';
 
-import { TFChartModule } from '../../../index'
+import { TFChartModule } from '../../../src/ng2-tfchart'
 
 @NgModule({
   declarations: [

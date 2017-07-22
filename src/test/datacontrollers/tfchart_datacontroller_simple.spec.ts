@@ -1,65 +1,26 @@
-import { TFChartDataBuffer } from './tfchart_databuffer'
-import { TFChartRangeInvalid, TFChartRange, TFChartRangeMake, TFChartEqualRanges, TFChartRangeMax, TFChartIntersectionRange } from '../tfchart_utils'
-import { TFChartDataType } from '../series/tfchart_series'
-import { TFChartDataSupplier, RequestResults } from '../tfchart_datasupplier'
-import { DataOperation, TFChartDataOperationType, TFChartDataRequestType } from '../tfchart_datacontroller'
-import { TFChartSimpleDataController } from './tfchart_datacontroler_simple'
+import { TFChartDataBuffer } from '../../datacontrollers/tfchart_databuffer'
+import { TFChartRangeInvalid, TFChartRange, TFChartRangeMake, TFChartEqualRanges, TFChartRangeMax, TFChartIntersectionRange } from '../../tfchart_utils'
+import { TFChartDataType } from '../../series/tfchart_series'
+import { TFChartDataSupplier, RequestResults } from '../../tfchart_datasupplier'
+import { DataOperation, TFChartDataOperationType, TFChartDataRequestType } from '../../tfchart_datacontroller'
+import { TFChartSimpleDataController } from '../../datacontrollers/tfchart_datacontroler_simple'
+import { MockDataSupplier } from '../tfchart_mockdatasupplier'
 
 describe("TFChartDataController", () => {
 
     interface DataType extends TFChartDataType {
         value: number;
     }
-    //     constructor(private value: number) {
-    //     }
 
-    //     public getValue(): number {
-    //         return this.value;
-    //     }
-    // }
-
-    class MockDataSupplier implements TFChartDataSupplier<DataType> {
-        private storedData: DataType[] = [];
-
-        constructor(private availabeRange: TFChartRange, private supplyCount: number, private initialOffset: number) {
-            
-            for (let i = 0; i < TFChartRangeMax(availabeRange); i++) {
-                this.storedData.push({
-                    timestamp: i * 100,
-                    value: i
-                });
-            }
-        }
-
-        public getAvailableRange(period: number): Promise<TFChartRange> {
-            return new Promise((resolve, reject) => {
-                resolve(this.availabeRange);
-            });
-        }
-
-        public fetchInitialDataRange(suggestedRange: TFChartRange, period: number): Promise<TFChartRange> {
-            return new Promise((resolve, reject) => {
-                resolve(TFChartRangeMake(this.initialOffset, this.supplyCount));
-            });
-        }
-
-        public fetchPaginationData(range: TFChartRange, period: number): Promise<RequestResults<DataType>> {
-            return new Promise((resolve, reject) => {
-                if (TFChartIntersectionRange(range, this.availabeRange).span == 0) {
-                    reject("Request out of range [we have " + this.availabeRange + " but received request for " + range);
-                } else {
-                    resolve({
-                        success: true,
-                        range: range,
-                        data: this.storedData.slice(range.position, TFChartRangeMax(range))
-                    });
-                }
-            });
-        }
+    function createDataType(index: number): DataType {
+        return {
+            timestamp: index * 100,
+            value: index
+        };
     }
 
     it("Initial subscription", (done) => {
-        let dataController = new TFChartSimpleDataController<DataType>(new MockDataSupplier(TFChartRangeMake(0, 10), 10, 0));
+        let dataController = new TFChartSimpleDataController<DataType>(new MockDataSupplier<DataType>(TFChartRangeMake(0, 10), 10, 0, createDataType));
 
         dataController.subscribe((dataOperation: DataOperation) => {
             expect(dataOperation.count).toBe(10);
@@ -76,7 +37,7 @@ describe("TFChartDataController", () => {
     });
 
     it("Request new forward contiguious block", (done) => {
-        let dataController = new TFChartSimpleDataController<DataType>(new MockDataSupplier(TFChartRangeMake(0, 100), 10, 0));
+        let dataController = new TFChartSimpleDataController<DataType>(new MockDataSupplier<DataType>(TFChartRangeMake(0, 100), 10, 0, createDataType));
 
         let requestCount = 0;
 
@@ -107,7 +68,7 @@ describe("TFChartDataController", () => {
     });
 
     it("Request new backwards contiguious block", (done) => {
-        let dataController = new TFChartSimpleDataController<DataType>(new MockDataSupplier(TFChartRangeMake(0, 100), 10, 90));
+        let dataController = new TFChartSimpleDataController<DataType>(new MockDataSupplier<DataType>(TFChartRangeMake(0, 100), 10, 90, createDataType));
 
         let requestCount = 0;
 
@@ -139,7 +100,7 @@ describe("TFChartDataController", () => {
     });
 
     it("Request new forward non-contiguious block", (done) => {
-        let dataController = new TFChartSimpleDataController<DataType>(new MockDataSupplier(TFChartRangeMake(0, 100), 10, 0));
+        let dataController = new TFChartSimpleDataController<DataType>(new MockDataSupplier<DataType>(TFChartRangeMake(0, 100), 10, 0, createDataType));
 
         let requestCount = 0;
 
@@ -171,7 +132,7 @@ describe("TFChartDataController", () => {
     });
 
     it("Request new backwards non-contiguious block", (done) => {
-        let dataController = new TFChartSimpleDataController<DataType>(new MockDataSupplier(TFChartRangeMake(0, 100), 10, 90));
+        let dataController = new TFChartSimpleDataController<DataType>(new MockDataSupplier<DataType>(TFChartRangeMake(0, 100), 10, 90, createDataType));
 
         let requestCount = 0;
 
@@ -203,7 +164,7 @@ describe("TFChartDataController", () => {
     });
 
     it("Fill pending request queue", (done) => {
-        let dataController = new TFChartSimpleDataController<DataType>(new MockDataSupplier(TFChartRangeMake(0, 100), 10, 0));
+        let dataController = new TFChartSimpleDataController<DataType>(new MockDataSupplier<DataType>(TFChartRangeMake(0, 100), 10, 0, createDataType));
 
         let requestCount = 0;
 

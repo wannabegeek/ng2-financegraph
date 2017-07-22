@@ -135,3 +135,10 @@ export function TFChartRectGetMinY(rect: TFChartRect) {
 export function TFChartRectGetMaxY(rect: TFChartRect) {
     return rect.origin.y + rect.size.height;
 }
+
+export function TFChartRectInset(rect: TFChartRect, x_inset: number, y_inset: number): TFChartRect {
+    return TFChartRectMake(rect.origin.x + x_inset, 
+                                rect.origin.y + y_inset,
+                                rect.size.width - (x_inset * 2),
+                                rect.size.height - (y_inset * 2));
+}

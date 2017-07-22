@@ -18,12 +18,11 @@
   ],
   "exclude": [
     "example",
-    "node_modules",
-    "dist"
+    "node_modules"
     // "**/*.spec.ts"
   ],
   "angularCompilerOptions": {
-    "genDir": "./dist",
+    "genDir": "compiled",
     "strictMetadataEmit": true
   }
 }
