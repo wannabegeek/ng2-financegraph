@@ -31,19 +31,37 @@ export interface DataSubscription {
     (dataOperation: DataOperation): void;
 }
 
+export interface DataRequestResults<T extends TFChartDataType> {
+    data: T[];
+    range: TFChartRange;
+    moreToFollow: Promise<DataRequestResults<T>>;
+}
+
 export abstract class TFChartDataController {
 
     public abstract setPeriod(period: number);
-    public abstract subscribe(subscriber: DataSubscription);
-    
-    public abstract availableRange(): TFChartRange;
-    public abstract requestData(range: TFChartRange);
-    
-    public abstract getCachedRange(): TFChartRange;
-    public abstract getCachedData<T extends TFChartDataType>(): T[];
+    /**
+     * This could be for if the availableRange is updated???
+     */
+    // public abstract subscribe(subscriber: DataSubscription);
 
-    // public abstract canSupplyData(range: TFChartRange): TFChartDataAvailability;
-    public hasData(): boolean {
-        return this.getCachedRange() != TFChartRangeInvalid();
-    }
+    /**
+     * Provides the total available range in timestamp space
+     */
+    public abstract availableRange(): Promise<TFChartRange>;
+
+    /**
+     * range is in timestamp space i.e. startTimestamp -> endTimestamp.
+     */
+    public abstract getDataInRange<T extends TFChartDataType>(range: TFChartRange): Promise<DataRequestResults<T>>
+
+    
+    // public abstract requestData(range: TFChartRange);
+    
+    // public abstract getCachedRange(): TFChartRange;
+    // public abstract getCachedData<T extends TFChartDataType>(): T[];
+
+    // public hasData(): boolean {
+    //     return this.getCachedRange() != TFChartRangeInvalid();
+    // }
 }

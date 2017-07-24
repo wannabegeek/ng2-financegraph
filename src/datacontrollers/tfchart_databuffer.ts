@@ -1,7 +1,8 @@
 
-import { TFChartRange, TFChartRangeMake, TFChartIntersectionRange, TFChartEqualRanges, TFChartRangeMax, TFChartUnionRange, TFChartRangeInvalid } from '../tfchart_utils'
+import { TFChartRange, TFChartRangeMake, TFChartIntersectionRange, TFChartEqualRanges, TFChartRangeMax, TFChartUnionRange, TFChartRangeInvalid, TFChartLocationInRange } from '../tfchart_utils'
+import { TFChartDataType } from '../series/tfchart_series'
 
-export class TFChartDataBuffer<T> {
+export class TFChartDataBuffer<T extends TFChartDataType> {
     private data: T[] = [];
     private range: TFChartRange = TFChartRangeInvalid();
 
@@ -17,7 +18,13 @@ export class TFChartDataBuffer<T> {
     }
 
     public getDataInRange(range: TFChartRange): T[] {
-        return this.data;
+        let result: T[] = [];
+        for (let d of this.data) {
+            if (TFChartLocationInRange(d.timestamp, range)) {
+                result.push(d);
+            }
+        }
+        return result;
     }
 
     public clear(): void {
@@ -31,14 +38,24 @@ export class TFChartDataBuffer<T> {
             this.range = range;            
         } else {
             // we don't want data that we already have...
-            let intersectionSize = TFChartRangeMax(TFChartIntersectionRange(this.range, range));
-            range.span -= intersectionSize;
+            let intersectingRange: TFChartRange = TFChartIntersectionRange(this.range, range);
+            let intersectionSize = TFChartRangeMax(intersectingRange);
+            if (intersectingRange.span != range.span) {  // otherwise we have all the data already
+                range.span -= intersectionSize;
 
-            if (intersectionSize != 0) {
-                data = data.slice(0, intersectionSize);
+                let result: T[] = [];
+                if (intersectionSize != 0) {
+                    for (let d of data) {
+                        if (d.timestamp < this.range.position) {
+                            result.push(d);
+                        }
+                    }
+                } else {
+                    result = data;
+                }
+                this.data = result.concat(this.data);
+                this.range = TFChartUnionRange(this.range, range);
             }
-            this.data = data.concat(this.data);
-            this.range = TFChartUnionRange(this.range, range);
         }
     }
 
@@ -50,18 +67,27 @@ export class TFChartDataBuffer<T> {
             // we don't want data that we already have...
             let completeRange: TFChartRange = null;
             
-            let intersectionSize: number = 0;
-            intersectionSize = TFChartIntersectionRange(this.range, range).span;
-            range.position += intersectionSize;
-            range.span -= intersectionSize;
-            completeRange = TFChartUnionRange(this.range, range);
+            let intersectionSize: number = TFChartIntersectionRange(this.range, range).span;
+            if (intersectionSize != range.span) {  // otherwise we have all the data already
+                range.position += intersectionSize;
+                range.span -= intersectionSize;
+                completeRange = TFChartUnionRange(this.range, range);
 
-            if (intersectionSize != 0) {
-                data = data.slice(intersectionSize, data.length - intersectionSize);
+                let result: T[] = [];
+                if (intersectionSize != 0) {
+                    let maxRange: number = TFChartRangeMax(this.range);
+                    for (let d of data) {
+                        if (d.timestamp > maxRange) {
+                            result.push(d);
+                        }
+                    }
+                } else {
+                    result = data;
+                }
+
+                this.data = this.data.concat(result);
+                this.range = completeRange; //TFChartUnionRange(this.range, range);
             }
-
-            this.data = this.data.concat(data);
-            this.range = completeRange; //TFChartUnionRange(this.range, range);
         }
     }
 }

@@ -334,7 +334,7 @@ export class TFChart extends TFChartContext {
     }
 
     private periodCeil(value: number): number {
-        return value - (value % this.period) + this.period;
+        return this.periodFloor(value) + this.period;
     }
 
     private chartBounds(): TFChartRect {
